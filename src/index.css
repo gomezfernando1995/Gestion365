@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import "tailwindcss";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.font-title {
+  font-family: 'Poppins', sans-serif;
+}
+
+.font-body {
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.descripcion-limitada {
+   display: -webkit-box;
+  -webkit-line-clamp: 4; /* máximo 4 líneas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  /* propiedad estándar futura */
+  line-clamp: 4;
+}
