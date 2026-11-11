@@ -18,7 +18,7 @@ export default function MyIncidents() {
 
     const { incidents, incidentsByUser } = useIncidentes();
 
-    const userIncidents = useMemo(() => {
+    const userIncidents = useMemo(() => {       
         if (incidentsByUser && incidentsByUser.length > 0) {
             return incidentsByUser;
         }

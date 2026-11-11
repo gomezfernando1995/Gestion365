@@ -53,6 +53,10 @@ const getStatusColor = (status?: string) => {
       return "bg-green-600 text-white";
     case "Cerrado":
       return "bg-gray-500 text-white";
+    case "Cancelado":
+      return "bg-gray-500 text-white";
+    case "Pendiente de información":
+      return "bg-gray-100 text-yellow-500";
     default:
       return "bg-gray-200 text-gray-700";
   }
@@ -180,10 +184,11 @@ export default function Incidents() {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 space-y-4">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row justify-between items-center bg-white shadow-sm p-4 rounded-xl">
+      <header className="flex flex-col sm:flex-row  justify-between items-center bg-white shadow-sm p-4 rounded-xl">
         <div>
           <h1 className="text-xl font-bold text-blue-900">Panel de Incidentes</h1>
           <p className="text-xs text-gray-500">Gestión y seguimiento de solicitudes del sistema</p>
@@ -202,9 +207,9 @@ export default function Incidents() {
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div
           onClick={() => setSelectedStatusGroup(selectedStatusGroup === "ABIERTOS" ? "TODOS" : "ABIERTOS")}
-          className={`bg-white shadow-sm rounded-xl p-4 text-center cursor-pointer border transition hover:border-red-500 ${selectedStatusGroup === "ABIERTOS" ? "border-red-500 ring-2 ring-red-500" : "border-gray-100"}`}
+          className={`bg-white shadow-sm rounded-xl p-4 text-center cursor-pointer border transition hover:border-red-500 ${selectedStatusGroup === "ABIERTOS" ? "border-red-700 ring-2 ring-red-700" : "border-gray-100"}`}
         >
-          <span className="block text-2xl font-bold text-red-600">{statusCounts.abiertos}</span>
+          <span className="block text-2xl font-bold text-red-700">{statusCounts.abiertos}</span>
           <span className="text-xs font-semibold text-gray-500 uppercase">Abiertos</span>
         </div>
 
@@ -319,12 +324,15 @@ export default function Incidents() {
                 </tr>
               ) : (
                 filteredIncidents.map((incident) => (
+
                   <tr
                     key={incident.id_incidente}
                     onClick={() => navigate(`/incidents/${incident.id_incidente}`)}
-                    className="hover:bg-gray-50 transition cursor-pointer"
+                    
                   >
-                    <td className="p-3 font-semibold text-gray-700">#{incident.id_incidente}</td>
+                    <td className={`p-3 font-semibold text-gray-700 ${incident.estado_incidentes?.descripcion?.toLowerCase() === "reportado" ? "border-l-2 border-red-500 bg-red-50/40" : ""}`}>
+                      #{incident.id_incidente}
+                    </td>
                     <td className="p-3">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${getPriorityColor(incident.prioridad_incidentes?.descripcion)}`}>
                         {getPriorityIcon(incident.prioridad_incidentes?.descripcion)}
