@@ -1,3 +1,4 @@
+import type { Equipment } from "./equipmentService";
 import { supabase } from "./supabase";
 
 export interface Station {
@@ -8,6 +9,9 @@ export interface Station {
   id_sector: number;
   created_at: string;   // timestamptz → ISO string
   updated_at: string;   // timestamptz → ISO string
+
+  nombre?: string;
+  equipos?: Equipment[];
 }
 
 export interface newStation {
@@ -17,11 +21,11 @@ export interface newStation {
   id_sector: number;
 }
 
-export async function getStation(idStation:number): Promise<Station[]> {
+export async function getStation(idStation: number): Promise<Station[]> {
   const { data, error } = await supabase
     .from("puestos")
     .select("*")
-    .eq("id_puesto",idStation)
+    .eq("id_puesto", idStation)
   if (error) throw error;
   return data || [];
 }
@@ -34,11 +38,11 @@ export async function getAllStations(): Promise<Station[]> {
   return data || [];
 }
 
-export async function getStationBySector(idsector:number): Promise<Station[]> {
+export async function getStationBySector(idsector: number): Promise<Station[]> {
   const { data, error } = await supabase
     .from("puestos")
     .select("*")
-    .eq("id_sector",idsector)
+    .eq("id_sector", idsector)
 
   if (error) throw error;
   return data || [];
@@ -57,7 +61,7 @@ export async function getStationsBySectors(idSectores: number[]): Promise<Statio
   return data || [];
 }
 
-export async function insertStation(dat:newStation ) {
+export async function insertStation(dat: newStation) {
   const { data, error } = await supabase
     .from("puestos")
     .insert([dat])

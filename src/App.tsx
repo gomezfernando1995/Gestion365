@@ -15,6 +15,7 @@ import Establishment from "./pages/establishment";
 import UserDetails from "./pages/userDetails";
 import EstablishmentDetails from "./pages/establishmentDetails";
 import ContactUs from "./pages/contact";
+import MyIncidents from "./pages/myIncidents";
 
 export default function App() {
 
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="/" element={<LayoutDashboard />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/incidents" element={<Incidents />} />
+                  <Route path="/myIncidents" element={<MyIncidents/>}/>
                   <Route path="/incidents/:id" element={<IncidentDetails />} />
                   <Route path="/establishment" element={<Establishment />} />
                   <Route path="/establishment/:id" element={<EstablishmentDetails />} />

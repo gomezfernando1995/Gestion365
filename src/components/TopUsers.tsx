@@ -1,56 +1,14 @@
-import  { useMemo } from 'react';
 import { UserIcon, TrophyIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { useTopUsers } from '../hooks/useTopUsers';
 
-interface Incidente {
-    id_incidente: number;
-    id_estado_incidente?: number;
-    estado?: string;
-    tecnico?: {
-        id_usuario?: number;
-        nombre?: string;
-        apellido?: string;
-    } | null;
-    // O si en tu DB la relación viene directamente como asignado_a / usuario
-    usuario_asignado?: string;
-}
+export const TopUsers = () => {
+    const { topUsers, loadingTopUsers } = useTopUsers();
 
-interface TopUsersProps {
-    incidents?: Incidente[];
-}
+    // Tomar solo el Top 10 para la visualización
+    const topTecnicos = topUsers.slice(0, 10);
 
-export const TopUsers = ({ incidents = [] }: TopUsersProps) => {
-    // Agrupar y contar incidentes resueltos/atendidos por técnico
-    const topTecnicos = useMemo(() => {
-        if (!incidents || incidents.length === 0) return [];
+    const maxCantidad = topTecnicos.length > 0 ? topTecnicos[0].total_incidentes : 1;
 
-        const conteoMap: Record<string, { nombre: string; cantidad: number }> = {};
-
-        incidents.forEach((inc) => {
-            // Verificar si el incidente está resuelto o cerrado
-            // Adapta según los IDs o nombres de estado de tu sistema (ej: 3 = Resuelto, 4 = Cerrado)
-            const nombreTecnico = 
-                inc.tecnico?.nombre 
-                    ? `${inc.tecnico.nombre} ${inc.tecnico.apellido || ''}`.trim()
-                    : inc.usuario_asignado || 'Sin Asignar';
-
-            if (nombreTecnico !== 'Sin Asignar') {
-                if (!conteoMap[nombreTecnico]) {
-                    conteoMap[nombreTecnico] = { nombre: nombreTecnico, cantidad: 0 };
-                }
-                conteoMap[nombreTecnico].cantidad += 1;
-            }
-        });
-
-        // Convertir objeto a Array y ordenar de mayor a menor
-        return Object.values(conteoMap)
-            .sort((a, b) => b.cantidad - a.cantidad)
-            .slice(0, 5); // Tomar solo el Top 5
-    }, [incidents]);
-
-    // Obtener el valor máximo para calcular los porcentajes de la barra
-    const maxCantidad = topTecnicos.length > 0 ? topTecnicos[0].cantidad : 1;
-
-    // Colores para los 3 primeros puestos (Puesto 1: Oro, Puesto 2: Plata, Puesto 3: Bronce)
     const getBadgeStyle = (index: number) => {
         switch (index) {
             case 0:
@@ -65,56 +23,69 @@ export const TopUsers = ({ incidents = [] }: TopUsersProps) => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                    <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                    <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg">
                         <TrophyIcon className="w-5 h-5" />
                     </div>
-                    <h2 className="text-lg font-bold text-gray-900">Top Usuarios / Técnicos</h2>
+                    <h2 className="text-base font-bold text-gray-900">Top Usuarios / Técnicos</h2>
                 </div>
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Resoluciones
                 </span>
             </div>
 
-            {/* Listado de Técnicos / Usuarios */}
-            {topTecnicos.length === 0 ? (
-                <div className="h-48 flex flex-col items-center justify-center text-gray-400 gap-2">
+            {/* Estado de carga */}
+            {loadingTopUsers ? (
+                <div className="py-8 flex items-center justify-center text-gray-400">
+                    <p className="text-sm animate-pulse">Cargando ranking...</p>
+                </div>
+            ) : topTecnicos.length === 0 ? (
+                /* Estado vacío */
+                <div className="py-8 flex flex-col items-center justify-center text-gray-400 gap-2">
                     <UserIcon className="w-8 h-8 text-gray-300" />
                     <p className="text-sm">No hay incidentes asignados o resueltos aún.</p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                /* Listado de Técnicos / Usuarios */
+                <div className="space-y-6">
                     {topTecnicos.map((user, index) => {
-                        const porcentaje = Math.round((user.cantidad / maxCantidad) * 100);
+                        // Limpiamos la visualización para mostrar solo el nombre o una etiqueta clara
+                        const nombreMostrar = user.nombre_usuario && user.nombre_usuario.trim() !== ''
+                            ? user.nombre_usuario 
+                            : `Usuario ID: ${user.id_usuario_asignado}`;
+
+                        const cantidad = user.total_incidentes;
+                        const porcentaje = Math.round((cantidad / maxCantidad) * 100);
+                        const uniqueKey = `${user.id_usuario_asignado}-${index}`;
 
                         return (
-                            <div key={user.nombre} className="space-y-1.5">
+                            <div key={uniqueKey} className="space-y-1">
                                 <div className="flex items-center justify-between text-sm">
                                     <div className="flex items-center gap-2.5 min-w-0">
                                         {/* Posición badge */}
-                                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${getBadgeStyle(index)}`}>
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 ${getBadgeStyle(index)}`}>
                                             {index + 1}
                                         </span>
-                                        <span className="font-semibold text-gray-800 truncate">
-                                            {user.nombre}
+                                        <span className="font-semibold text-gray-800 text-xs truncate">
+                                            {nombreMostrar}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700 shrink-0">
                                         <CheckCircleIcon className="w-4 h-4 text-emerald-500" />
-                                        <span>{user.cantidad}</span>
-                                        <span className="text-gray-400 font-normal">
-                                            ({user.cantidad === 1 ? 'incidente' : 'incidentes'})
+                                        <span>{cantidad}</span>
+                                        <span className="text-gray-400 font-normal text-[11px]">
+                                            ({cantidad === 1 ? 'incidente' : 'incidentes'})
                                         </span>
                                     </div>
                                 </div>
 
                                 {/* Barra de Progreso */}
-                                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                                     <div
-                                        className={`h-2 rounded-full transition-all duration-500 ${
+                                        className={`h-1.5 rounded-full transition-all duration-500 ${
                                             index === 0
                                                 ? 'bg-amber-500'
                                                 : index === 1

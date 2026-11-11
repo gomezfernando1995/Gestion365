@@ -1,91 +1,116 @@
 import { useEffect, useState } from "react";
-import { getEstablishmentAdminGlobal, getEstablishmentByID, getEstablishmentsAdminEnterprise } from "../services/establishmentService";
 import { useParams } from "react-router-dom";
+import { 
+  getEstablishmentAdminGlobal, 
+  getEstablishmentByID, 
+  getEstablishmentsAdminEnterprise 
+} from "../services/establishmentService";
 import { getIncidentsReportbyEstablishment } from "../services/incidentsService";
 import { getUsersByEstablishment } from "../services/usersService";
 import { getSectorByEstablishment } from "../services/sectorsServices";
 import { getStationsBySectors } from "../services/stationsService";
 import { getAllEquipmentsByStation } from "../services/equipmentService";
+import { getCurrentUserLocalStorage } from "../utils/auth";
 
 export function useEstablishment() {
-    const [establishments, setEstablishments] = useState<any[]>([]);
-    const [oneEstablishment, setOneEstablishment] = useState<any>([]);
-    const [incidentsByEstablishment, setIncidentsByEstablishment] = useState<any[]>([]);
-    const [usersByEstablishment, setUsersByEstablishment] = useState<any[]>([]);
-    const [sectorsByEstablishment, setSectorsByEstablishment] = useState<any[]>([]);
-    const [stationBySector, setStationBySector] = useState<any[]>([]);
-    const [equipmentsByStation, setEquipmentsByStation] = useState<any[]>([]);
+  const [establishments, setEstablishments] = useState<any[]>([]);
+  const [oneEstablishment, setOneEstablishment] = useState<any>(null); // Corregido a null
+  const [incidentsByEstablishment, setIncidentsByEstablishment] = useState<any[]>([]);
+  const [usersByEstablishment, setUsersByEstablishment] = useState<any[]>([]);
+  const [sectorsByEstablishment, setSectorsByEstablishment] = useState<any[]>([]);
+  const [stationBySector, setStationBySector] = useState<any[]>([]);
+  const [equipmentsByStation, setEquipmentsByStation] = useState<any[]>([]);
 
+  const [loading, setLoading] = useState(true);
+  const [hasPermission, setHasPermission] = useState(true);
 
-    const [loading, setLoading] = useState(true);
-    const userLocalStorage = JSON.parse(localStorage.getItem("currentUser")!)
-    const [hasPermission, setHasPermission] = useState(true);
-    const { id } = useParams();
-    const idEstablecimiento = Number(id);
+const userLocalStorage = getCurrentUserLocalStorage();
+  const idRol = userLocalStorage?.idrol;
+  const idEmpresa = userLocalStorage?.id_empresa;
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                if (userLocalStorage.idrol === 6) {
-                    const data = await getEstablishmentAdminGlobal(); // ve todos los establecimientos
-                    setEstablishments(data || []);
-                } else if (userLocalStorage.idrol === 13) {
-                    const data = await getEstablishmentsAdminEnterprise(userLocalStorage.id_empresa); // solo los establecimineto que maneja la empresa
-                    setEstablishments(data || []);
-                } else {
-                    setHasPermission(false); // 👈 marcamos que no tiene permisos
-                }
+  const { id } = useParams();
+  const idEstablecimiento = Number(id);
 
-            } catch (err) {
-                console.error("Error cargando establecimientos:", err);
-            } finally {
-                setTimeout(() => setLoading(false), 600);
-            }
-        };
-
-        if (userLocalStorage) { // 👈 solo corre cuando ya existe
-            fetchUsers();
+  // 1. Cargar lista de establecimientos según rol 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        if (idRol === 6) {
+          const data = await getEstablishmentAdminGlobal(); // Admin Global ve todos
+          setEstablishments(data || []);
+        } else if (idRol === 13) {
+          const data = await getEstablishmentsAdminEnterprise(idEmpresa); // Solo de su empresa
+          setEstablishments(data || []);
+        } else {
+          setHasPermission(false);
         }
-    }, [userLocalStorage]);
+      } catch (err) {
+        console.error("Error cargando establecimientos:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    if (idRol) {
+      fetchUsers();
+    } else {
+      setLoading(false);
+    }
+  }, [idRol, idEmpresa]); 
 
+  // 2. Cargar detalle de un establecimiento específico cuando id cambia
+  useEffect(() => {
+    if (!id || isNaN(idEstablecimiento)) {
+      return;
+    }
+    const fetchEstablishmentByID = async () => {
+      try {
+        setLoading(true);
+        const [dataEst, dataIncidents, dataUsers, dataSectors, dataEquipments] = await Promise.all([
+          getEstablishmentByID(idEstablecimiento),
+          getIncidentsReportbyEstablishment(idEstablecimiento),
+          getUsersByEstablishment(idEstablecimiento),
+          getSectorByEstablishment(idEstablecimiento),
+          getAllEquipmentsByStation(idEstablecimiento),
+        ]);
 
-    useEffect(() => {
+        const sectores = dataSectors || [];
+        const idsSectores = sectores.map((s: any) => s.id_sector);
 
-        if (!id || isNaN(idEstablecimiento)) {
-            return;
+        // Petición secundaria dependiente de los sectores obtenidos
+        let puestos: any[] = [];
+        if (idsSectores.length > 0) {
+          puestos = await getStationsBySectors(idsSectores);
         }
-        const fetchEstablishmentByID = async () => {
-            try {
-                // 1. Peticiones directas en paralelo
-                const [data, data1, data3, data4] = await Promise.all([
-                    getEstablishmentByID(idEstablecimiento),
-                    getIncidentsReportbyEstablishment(idEstablecimiento),
-                    getUsersByEstablishment(idEstablecimiento),
-                    getSectorByEstablishment(idEstablecimiento),
-                ]);
-                const sectores = data4 || [];
-                const idsSectores = sectores.map((s: any) => s.id_sector);
-                const puestos = await getStationsBySectors(idsSectores);
-                setStationBySector(puestos);
-                
-                const data6 = await getAllEquipmentsByStation(Number(id))
 
-                setOneEstablishment(data[0] || null);
-                setUsersByEstablishment(data3 || []);
-                setIncidentsByEstablishment(data1 || []);
-                setSectorsByEstablishment(data4 || []);
-                setStationBySector(puestos || []);
-                setEquipmentsByStation(data6 || []);
+        // Seteo de estados
+        setOneEstablishment(dataEst?.[0] || null);
+        setIncidentsByEstablishment(dataIncidents || []);
+        setUsersByEstablishment(dataUsers || []);
+        setSectorsByEstablishment(sectores);
+        setEquipmentsByStation(dataEquipments || []);
+        setStationBySector(puestos || []);
 
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchEstablishmentByID();
-    }, [id]);
+      } catch (error) {
+        console.error("Error al cargar detalles del establecimiento:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return { establishments, loading, hasPermission, userLocalStorage, usersByEstablishment, oneEstablishment, incidentsByEstablishment, sectorsByEstablishment, stationBySector, equipmentsByStation };
+    fetchEstablishmentByID();
+  }, [idEstablecimiento]);
+
+  return { 
+    establishments, 
+    loading, 
+    hasPermission, 
+    userLocalStorage, 
+    usersByEstablishment, 
+    oneEstablishment, 
+    incidentsByEstablishment, 
+    sectorsByEstablishment, 
+    stationBySector, 
+    equipmentsByStation 
+  };
 }

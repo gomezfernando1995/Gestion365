@@ -31,7 +31,7 @@ export default function Sidebar() {
   const menu = [
     { name: "Dashboard", icon: HomeIcon, ruta: "/dashboard", roles: ALL_ROLES },
     { name: "Incidentes", icon: ExclamationTriangleIcon, ruta: "/incidents", roles: ALL_ROLES },
-    { name: "Mis Incidentes", icon: TicketIcon, ruta: "/my-incidents", hidden: true, roles: [2,5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20] },
+    { name: "Mis Incidentes", icon: TicketIcon, ruta: "/myIncidents", hidden: false, roles: [2,5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20] },
     { name: "Equipos", icon: ComputerDesktopIcon, ruta: "/equipments", roles: ALL_ROLES, hidden: true },
     { name: "Reportes", icon: ChartBarIcon, ruta: "/reports", roles: [2,5, 6, 7, 13, 14] },
     { name: "Usuarios", icon: UsersIcon, ruta: "/users", roles: [2,5, 6, 13] }, // 

@@ -4,9 +4,8 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   UsersIcon
-} from "@heroicons/react/24/outline"; // Cambiado a outline para un look más moderno
-import { supabase } from '../services/supabase'; // Asegúrate de ajustar la ruta de tu cliente Supabase
-import { getUsersCount } from '../services/usersService';
+} from "@heroicons/react/24/outline"; 
+import { supabase } from '../services/supabase'; 
 
 interface Metrics {
   openIncidents: number;
@@ -24,27 +23,68 @@ const StatusCards = () => {
   });
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Leemos el usuario del localStorage
+  const userLocalS = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  const idEmpresa = userLocalS?.id_empresa;
+  const idEstablecimiento = userLocalS?.id_establecimiento;
+
   useEffect(() => {
     const fetchDashboardMetrics = async () => {
       setLoading(true);
       try {
-        // Carga en paralelo de métricas desde Supabase y tus servicios
+        // Función auxiliar para aplicar los permisos jerárquicos
+        const applyRoleFilters = (query: any) => {
+          if (idEstablecimiento) {
+            return query.eq('id_establecimiento', idEstablecimiento);
+          } else if (idEmpresa) {
+            return query.eq('id_empresa', idEmpresa);
+          }
+          // Admin Global: sin filtros (trae todo)
+          return query;
+        };
+
+        // 1. Consultas de Incidentes con múltiples estados usando .in()
+        let queryClose = supabase
+          .from('incidentes')
+          .select('*', { count: 'exact', head: true })
+          .in('id_estado_incidente', [7, 8, 10]); // Resueltos o cerrados
+
+        let queryPending = supabase
+          .from('incidentes')
+          .select('*', { count: 'exact', head: true })
+          .in('id_estado_incidente', [2, 3, 4, 5, 6, 1, 9]); // Pendientes / Abiertos / En proceso
+
+        let queryTotal = supabase
+          .from('incidentes')
+          .select('*', { count: 'exact', head: true }); // Total general de incidentes
+
+        // 2. Consulta de Usuarios (asegúrate de que tu tabla en Supabase se llame 'usuarios' o 'profiles')
+        let queryUsers = supabase
+          .from('usuarios')
+          .select('*', { count: 'exact', head: true });
+
+        // Aplicamos los filtros de rol a TODAS las consultas
+        queryClose = applyRoleFilters(queryClose);
+        queryPending = applyRoleFilters(queryPending);
+        queryTotal = applyRoleFilters(queryTotal);
+        queryUsers = applyRoleFilters(queryUsers);
+
+        // Carga en paralelo eficiente con Promise.all
         const [
-          usersCount,
-          { count: openCount },
-          { count: resolvedCount },
-          { count: pendingCount }
+          { count: totalCount },
+          { count: closeCount },
+          { count: pendingCount },
+          { count: usersCount }
         ] = await Promise.all([
-          getUsersCount(),
-          // Ajusta los id_estado_incidente según los IDs reales en tu BD
-          supabase.from('incidentes').select('*', { count: 'exact', head: true }).eq('id_estado_incidente', 1), // Abiertos
-          supabase.from('incidentes').select('*', { count: 'exact', head: true }).eq('id_estado_incidente', 7), // Resueltos
-          supabase.from('incidentes').select('*', { count: 'exact', head: true }).eq('id_estado_incidente', 2), // Pendientes/En Proceso
+          queryTotal,
+          queryClose,
+          queryPending,
+          queryUsers,
         ]);
 
         setMetrics({
-          openIncidents: openCount || 0,
-          resolvedIncidents: resolvedCount || 0,
+          openIncidents: totalCount || 0,
+          resolvedIncidents: closeCount || 0,
           pendingIncidents: pendingCount || 0,
           totalUsers: usersCount || 0,
         });
@@ -56,12 +96,14 @@ const StatusCards = () => {
     };
 
     fetchDashboardMetrics();
-  }, []);
+    
+    // Dependencias primitivas para evitar bucles infinitos
+  }, [idEmpresa, idEstablecimiento]);
 
   const cardsConfig = [
     {
       id: "open",
-      label: "Incidentes Abiertos",
+      label: "Total Incidentes",
       value: metrics.openIncidents,
       icon: RocketLaunchIcon,
       bgCard: "bg-blue-600 hover:bg-blue-700",
@@ -69,7 +111,7 @@ const StatusCards = () => {
     },
     {
       id: "resolved",
-      label: "Incidentes Resueltos",
+      label: "Incidentes Resueltos/Cerrados",
       value: metrics.resolvedIncidents,
       icon: CheckCircleIcon,
       bgCard: "bg-emerald-600 hover:bg-emerald-700",
@@ -116,7 +158,6 @@ const StatusCards = () => {
               )}
             </div>
 
-            {/* Icono encuadrado con fondo semitransparente */}
             <div className={`p-3 rounded-xl ${card.bgIcon} shrink-0 ml-4 backdrop-blur-sm`}>
               <IconComponent className="h-7 w-7 stroke-2" />
             </div>

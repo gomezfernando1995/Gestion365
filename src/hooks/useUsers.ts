@@ -3,8 +3,8 @@ import { getUser, getUsers, getUsersByEstablishment } from "../services/usersSer
 import { useParams } from "react-router-dom";
 import { getAllRoles } from "../services/rolesService";
 import { getEstablishmentAdminGlobal } from "../services/establishmentService";
+import { getCurrentUserLocalStorage } from "../utils/auth";
 
-// Helper extraído afuera del hook para mejor organización
 export const getUsersByEnterpriseAndItsEstablishments = async (idEmpresa: number) => {
   try {
     const [allUsers, allEstablishments] = await Promise.all([
@@ -34,17 +34,9 @@ export function useUsers() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingUser, setLoadingUser] = useState(false);
 
-  // 1. Inicialización síncrona y segura desde localStorage
-  const [userLocalS] = useState<any>(() => {
-    try {
-      const item = localStorage.getItem("currentUser");
-      return item ? JSON.parse(item) : null;
-    } catch (e) {
-      console.error("Error parseando currentUser del localStorage:", e);
-      return null;
-    }
-  });
-
+  const userLocalS = getCurrentUserLocalStorage();
+  const id_empresa = userLocalS?.id_empresa ?? null;
+  const id_establecimiento = userLocalS?.id_establecimiento ?? null;
   const { id } = useParams();
 
   // 2. Fetch de usuario individual por ID de URL
@@ -73,23 +65,20 @@ export function useUsers() {
     fetchSingleUser();
   }, [id]);
 
-  // 3. Fetch de listado inicial de usuarios y roles según perfil
-  useEffect(() => {
+  // 3. Fetch de listado inicial de usuarios y roles según perfil jerárquico
+ useEffect(() => {
     const fetchInitialData = async () => {
       setLoadingUsers(true);
       try {
-        const id_empresa = userLocalS?.id_empresa ?? null;
-        const id_establecimiento = userLocalS?.id_establecimiento ?? null;
-
         const [usersData, rolesData] = await Promise.all([
           (async () => {
-            if (!id_empresa && id_establecimiento) {
-              return await getUsersByEstablishment(id_establecimiento);
-            }
-            if (id_empresa && !id_establecimiento) {
+            if (id_empresa) {
               return await getUsersByEnterpriseAndItsEstablishments(id_empresa);
             }
-            // Si no hay empresa ni establecimiento (o userLocalS es null / Admin Global)
+            if (id_establecimiento) {
+              return await getUsersByEstablishment(id_establecimiento);
+            }
+            // Admin Global (sin empresa ni establecimiento restrictivo)
             return await getUsers();
           })(),
           getAllRoles()
@@ -103,9 +92,8 @@ export function useUsers() {
         setLoadingUsers(false);
       }
     };
-
     fetchInitialData();
-  }, [userLocalS]); // Se ejecuta al montar o si userLocalS llega a cambiar
+  }, [id_empresa, id_establecimiento]);
 
   return {
     users,

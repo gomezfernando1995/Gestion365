@@ -45,6 +45,31 @@ export async function getIncidentsReportbyUser(userId: number): Promise<Incident
   return data || [];
 }
 
+export async function getIncidentsbyEquipment(id_equipment: number): Promise<Incidente[]> {
+  const { data, error } = await supabase
+    .from("incidentes")
+    .select(`
+      *,
+      establecimientos!fk_establecimiento(*),
+      sectores!fk_sector(*),
+      prioridad_incidentes!fk_prioridad(*), 
+      categoria_incidentes!fk_categoria(*),
+      estado_incidentes!fk_estado(*),
+      tipo_tickets!incidentes_id_tipo_ticket_fkey(*),
+      empresas!incidentes_id_empresa_fkey(*),
+      puestos!incidentes_id_puesto_fkey(*),
+      equipos!incidentes_id_equipo_fkey(*),
+      usuario_reporta:usuarios!incidentes_id_usuario_reporta_fkey(*),
+      usuario_asignado:usuarios!incidentes_id_usuario_asignado_fkey(*),
+      tipo_comentarios!incidentes_id_tipo_comentario_fkey(*)
+    `)
+    .eq("id_equipo", id_equipment)
+  if (error) throw new Error(error.message);
+
+  return data || [];
+}
+
+
 export async function getIncidentsbyEstablishment(id_establishment: number): Promise<Incidente[]> {
   const { data, error } = await supabase
     .from("incidentes")
@@ -78,7 +103,6 @@ export async function getIncidentsbyEnterprise(id_enterprice: number): Promise<I
 
   return data || [];
 }
-
 
 export async function getIncidentsResolvedbyUser(userId: number): Promise<Incidente[]> {
 

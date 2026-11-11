@@ -10,102 +10,101 @@ import { createUser } from "../services/usersService";
 import { supabase } from "../services/supabase";
 import Swal from "sweetalert2";
 
+import { getCurrentUserLocalStorage } from "../utils/auth";
+
 interface UserModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (data: any) => void;
 }
 
-export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
+const initialState: Usuario = {
+    uid: "",
+    nombre: "",
+    apellido: "",
+    correo: "",
+    usuario: "",
+    contrasenia: "",
+    direccion: "",
+    img: "",
+    idestadousuario: 1,
+    idrol: undefined,
+    idlocalidad: undefined,
+    idpais: undefined,
+    idprovincia: undefined,
+    id_empresa: undefined,
+    id_establecimiento: undefined,
+};
 
-    const [dataForm, setDataForm] = useState<Usuario>({
-        uid: "",
-        nombre: "",
-        apellido: "",
-        correo: "",
-        usuario: "",
-        contrasenia: "",
-        direccion: "",
-        img: "",
-        idestadousuario: 1,
-        idrol: undefined,
-        idlocalidad: undefined,
-        idpais: undefined,
-        idprovincia: undefined,
-        id_empresa: undefined,
-        id_establecimiento: undefined,
-    });
-    const [, setUserLocal] = useState(Object)
-    const [companies, setCompanies] = useState<Companie[]>();
-    const [establishments, setEstablishments] = useState<Establishment[]>();
-    const [countries, setCountries] = useState<Countries[]>();
-    const [provinces, setProvince] = useState<Province[]>();
-    const [localities, setLocalities] = useState<Localities[]>();
+export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
+    const [dataForm, setDataForm] = useState<Usuario>(initialState);
+    const [companies, setCompanies] = useState<Companie[]>([]);
+    const [establishments, setEstablishments] = useState<Establishment[]>([]);
+    const [countries, setCountries] = useState<Countries[]>([]);
+    const [provinces, setProvinces] = useState<Province[]>([]);
+    const [localities, setLocalities] = useState<Localities[]>([]);
     const [tipoPerfil, setTipoPerfil] = useState<number | null>(null);
     const [roles, setRoles] = useState<Roles[]>([]);
-    const userLocalStorage = JSON.parse(localStorage.getItem("currentUser") || "{}");
 
+    // Obtenemos los datos del usuario logueado de forma limpia con el helper
+    const userLocalStorage = getCurrentUserLocalStorage();
+    const idRol = userLocalStorage?.idrol;
+    const idEstablecimiento = userLocalStorage?.id_establecimiento;
+
+    // Limpiar o resetear formulario al abrir/cerrar si es necesario
+    useEffect(() => {
+        if (!isOpen) {
+            setDataForm(initialState);
+            setTipoPerfil(null);
+        }
+    }, [isOpen]);
+
+    // 1. Carga inicial de países y empresas (solo una vez al montar o abrir el modal)
+    useEffect(() => {
+        if (!isOpen) return;
+
+        getCountries().then((data) => setCountries(data || []));
+        getAllCompanies().then((data) => setCompanies(data || []));
+        getEstablishmentAdminGlobal().then((data) => setEstablishments(data || []));
+    }, [isOpen]);
+
+    // 2. Cargar roles según el tipo de perfil seleccionado
     useEffect(() => {
         if (tipoPerfil) {
-            getRolesByType(tipoPerfil).then(setRoles);
+            getRolesByType(tipoPerfil).then((data) => setRoles(data || []));
+        } else {
+            setRoles([]);
         }
     }, [tipoPerfil]);
 
-    //USER LOCALSTORAGE
-    useEffect(
-        () => {
-            const user = localStorage.getItem("currentUser");
-            if (user) { setUserLocal(JSON.parse(user)); }
-        }, []
-    );
-
-    //------------------------------------------------------------------------------------------------------------------------------------------
-
-    // SETEAMOS LOS PAISES 
-    useEffect(() => {
-        getCountries().then(setCountries)
-    }, []
-    );
-
-    // SETEAMOS PROVINCIAS POR PAISES
+    // 3. Seteamos provincias por país
     useEffect(() => {
         if (dataForm?.idpais) {
-            getProvincesByCountry(dataForm.idpais).then(setProvince)
+            getProvincesByCountry(dataForm.idpais).then((data) => setProvinces(data || []));
         } else {
-            setProvince([])
+            setProvinces([]);
+            setDataForm((prev) => ({ ...prev, idprovincia: undefined, idlocalidad: undefined }));
         }
     }, [dataForm?.idpais]);
 
-    // SETEAMOS LOCALIDADES POR PROVINCIA
+    // 4. Seteamos localidades por provincia
     useEffect(() => {
         if (dataForm?.idprovincia) {
-            getLocalitiesByProvince(dataForm.idprovincia).then(setLocalities);
+            getLocalitiesByProvince(dataForm.idprovincia).then((data) => setLocalities(data || []));
         } else {
             setLocalities([]);
+            setDataForm((prev) => ({ ...prev, idlocalidad: undefined }));
         }
-    }, [dataForm?.idprovincia]
-    );
-    //------------------------------------------------------------------------------------------------------------------------------------------
-    // SETEAMOS EMPRESA   
-    useEffect(() => {
-        getAllCompanies().then(setCompanies);
-    }, [dataForm?.id_empresa]);
-
-    // SETEAMOS Establecimientos
-    useEffect(() => {
-        getEstablishmentAdminGlobal().then(setEstablishments);
-    }, [dataForm.id_establecimiento]);
-
+    }, [dataForm?.idprovincia]);
 
     const saveUser = async () => {
-
         const { data, error } = await supabase.auth.signUp({
             email: dataForm.correo,
-            password: dataForm.contrasenia || "123456", // contraseña inicial
+            password: dataForm.contrasenia || "123456",
         });
 
         if (error) {
-            alert(`❌ Error en Auth: ${error.message}`);
+            Swal.fire("Error", `Error en Auth: ${error.message}`, "error");
             return;
         }
 
@@ -113,45 +112,40 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
         const payload: any = { ...dataForm };
         if (payload.id_empresa === undefined) delete payload.id_empresa;
         if (payload.id_establecimiento === undefined) delete payload.id_establecimiento;
+
         try {
             const usuario = {
                 ...payload,
                 uid: authUser!.id,
-                contrasenia: 123456,
-                usuario: payload.correo.split("@")[0], // nombre de usuario automático
-                // correo se mantiene como email válido
+                contrasenia: "123456",
+                usuario: payload.correo.split("@")[0],
             };
             await createUser(usuario);
             onClose();
             await Swal.fire({
                 title: "¡Usuario Guardado!",
-                text: `Usuario #${dataForm.correo} fue agregado correctamente.`,
+                text: `El usuario #${dataForm.correo} fue agregado correctamente.`,
                 icon: "success",
                 confirmButtonText: "Aceptar",
                 confirmButtonColor: "#2563eb",
-                customClass: {
-                    popup: "rounded-2xl",
-                },
+                customClass: { popup: "rounded-2xl" },
             });
-
         } catch (err) {
-            alert("Error al guardar usuario ❌");
+            Swal.fire("Error", "Error al guardar usuario en la base de datos ❌", "error");
         }
     };
 
     if (!isOpen) return null;
+
     return (
-
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg max-w-2xl p-6">
+            <div className="bg-white rounded-lg shadow-lg max-w-2xl p-6 w-full max-h-[90vh] overflow-y-auto">
                 <h2 className="text-xl font-bold text-center text-blue-900 mb-4">Agregar Usuario</h2>
-                {/* SELECT INPUT */}
-
 
                 <div className="grid grid-cols-2 gap-6 mt-6 border-t border-gray-300 pt-6">
                     {/* Radio Empresa */}
-                    {userLocalStorage.idrol != 2 && (
-                        <label className="flex items-center gap-3 p-3  rounded-lg cursor-pointer hover:bg-gray-100">
+                    {idRol !== 2 && (
+                        <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100">
                             <input
                                 type="radio"
                                 name="tipoPerfil"
@@ -164,7 +158,7 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                         </label>
                     )}
                     {/* Radio Establecimiento */}
-                    <label className="flex items-center gap-3 p-3  rounded-lg cursor-pointer hover:bg-gray-100">
+                    <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100">
                         <input
                             type="radio"
                             name="tipoPerfil"
@@ -180,7 +174,6 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                 <div className="grid grid-cols-2 gap-6 mt-6 border-t border-gray-300 pt-2">
                     {/* Empresa */}
                     {tipoPerfil === 1 && (
-
                         <div>
                             <label className="block mb-2 font-semibold">Empresa</label>
                             <select
@@ -190,7 +183,7 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                                 className="w-full border rounded-md px-3 py-2"
                             >
                                 <option value="">Seleccione empresa</option>
-                                {companies!.map((e) => (
+                                {companies?.map((e) => (
                                     <option key={e.id_empresa} value={e.id_empresa}>
                                         {e.nombre}
                                     </option>
@@ -204,8 +197,8 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                             <label className="block mb-2 font-semibold">Establecimiento</label>
                             <select
                                 name="id_establecimiento"
-                                value={userLocalStorage?.id_establecimiento ?? dataForm.id_establecimiento ?? ""}
-                                disabled={Boolean(userLocalStorage?.id_establecimiento)} 
+                                value={idEstablecimiento ?? dataForm.id_establecimiento ?? ""}
+                                disabled={Boolean(idEstablecimiento)}
                                 onChange={(e) => setDataForm({ ...dataForm, id_establecimiento: Number(e.target.value) })}
                                 className="w-full border rounded-md px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             >
@@ -218,15 +211,14 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                             </select>
                         </div>
                     )}
+
                     {(tipoPerfil === 1 || tipoPerfil === 2) && (
                         <div>
                             <label className="block mb-2 font-semibold">Rol</label>
                             <select
                                 name="idrol"
                                 value={dataForm.idrol || ""}
-                                onChange={(e) =>
-                                    setDataForm({ ...dataForm, idrol: Number(e.target.value) })
-                                }
+                                onChange={(e) => setDataForm({ ...dataForm, idrol: Number(e.target.value) })}
                                 className="w-full border rounded-md px-3 py-2"
                             >
                                 <option value="">Seleccione rol</option>
@@ -242,9 +234,7 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
 
                 {(tipoPerfil === 1 || tipoPerfil === 2) && (
                     <div>
-
-                        < div className="grid grid-cols-2 gap-6 mt-6  border-t border-gray-300 pt-4">
-
+                        <div className="grid grid-cols-2 gap-6 mt-6 border-t border-gray-300 pt-4">
                             <div>
                                 <label className="block mb-2 font-semibold">Nombre</label>
                                 <input
@@ -256,7 +246,6 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                                     className="w-full border rounded-md px-3 py-2"
                                 />
                             </div>
-                            {/* Apellido */}
                             <div>
                                 <label className="block mb-2 font-semibold">Apellido</label>
                                 <input
@@ -270,7 +259,7 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-6 mt-1 ">
+                        <div className="grid grid-cols-1 gap-6 mt-4">
                             <div>
                                 <label className="block mb-2 font-semibold">Correo</label>
                                 <input
@@ -282,10 +271,9 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                                     className="w-full border rounded-md px-3 py-2"
                                 />
                             </div>
-
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6 mt-6 border-t border-gray-300 pt-2">
+                        <div className="grid grid-cols-2 gap-6 mt-4 border-t border-gray-300 pt-4">
                             {/* País */}
                             <div>
                                 <label className="block mb-2 font-semibold">País</label>
@@ -296,7 +284,7 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                                     className="w-full border rounded-md px-3 py-2"
                                 >
                                     <option value="">Seleccione país</option>
-                                    {countries!.map((c) => (
+                                    {countries?.map((c) => (
                                         <option key={c.idpais} value={c.idpais}>
                                             {c.descripcion}
                                         </option>
@@ -313,7 +301,7 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                                     className="w-full border rounded-md px-3 py-2"
                                 >
                                     <option value="">Seleccione provincia</option>
-                                    {provinces!.map((p) => (
+                                    {provinces?.map((p) => (
                                         <option key={p.idprovincia} value={p.idprovincia}>
                                             {p.descripcion}
                                         </option>
@@ -322,8 +310,7 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                             </div>
                         </div>
 
-
-                        <div className="grid grid-cols-2 gap-6 mt-2">
+                        <div className="grid grid-cols-2 gap-6 mt-4">
                             {/* Localidad */}
                             <div>
                                 <label className="block mb-2 font-semibold">Localidad</label>
@@ -334,49 +321,44 @@ export default function ModalNewUser({ isOpen, onClose }: UserModalProps) {
                                     className="w-full border rounded-md px-3 py-2"
                                 >
                                     <option value="">Seleccione localidad</option>
-                                    {localities!.map((l) => (
+                                    {localities?.map((l) => (
                                         <option key={l.idlocalidad} value={l.idlocalidad}>
                                             {l.descripcion}
                                         </option>
                                     ))}
                                 </select>
                             </div>
-                            <div className="space-y-4">
-                                {/* Dirección */}
-                                <div>
-                                    <label className="block mb-2 font-semibold">Dirección</label>
-                                    <input
-                                        type="text"
-                                        name="direccion"
-                                        value={dataForm.direccion || ""}
-                                        onChange={(e) => setDataForm({ ...dataForm, direccion: e.target.value })}
-                                        placeholder="Ingrese dirección..."
-                                        className="w-full border rounded-md px-3 py-2"
-                                    />
-                                </div>
+                            <div>
+                                <label className="block mb-2 font-semibold">Dirección</label>
+                                <input
+                                    type="text"
+                                    name="direccion"
+                                    value={dataForm.direccion || ""}
+                                    onChange={(e) => setDataForm({ ...dataForm, direccion: e.target.value })}
+                                    placeholder="Ingrese dirección..."
+                                    className="w-full border rounded-md px-3 py-2"
+                                />
                             </div>
-
                         </div>
-
                     </div>
                 )}
+
                 {/* Botones */}
-                <div className="flex flex-col md:flex-row justify-end gap-2 mt-6">
+                <div className="flex flex-col md:flex-row justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition-colors duration-200"
+                        className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition-colors duration-200 font-medium"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={saveUser}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200 font-medium"
                     >
                         Guardar
                     </button>
                 </div>
             </div>
-        </div >
-
+        </div>
     );
-};
+}

@@ -1,4 +1,6 @@
+import type { Incidente } from "../types/Incidente";
 import { supabase } from "./supabase";
+import type { TypeEquipment } from "./typeEquipmentService";
 
 export interface Equipment {
   id_equipo: number;
@@ -14,6 +16,13 @@ export interface Equipment {
   id_tipo_equipo: number;
   created_at: string;       // timestamptz
   updated_at: string;       // timestamptz
+
+  incidentes?: Incidente[];
+  tipo_equipos?:TypeEquipment;
+
+  direccion_ip?: string;
+  sector?: { nombre?: string };
+  ubicacion?: string;
 }
 
 export interface createEquipment {
@@ -31,7 +40,7 @@ export interface createEquipment {
 export async function getAllEquipments(): Promise<Equipment[]> {
   const { data, error } = await supabase
     .from("equipos")
-    .select("*");
+    .select("*,tipo_equipos!fk_tipo_equipo(*)");
   if (error) throw error;
   return data || [];
 }
@@ -40,7 +49,7 @@ export async function getAllEquipments(): Promise<Equipment[]> {
 export async function getAllEquipmentsByStation(idPuesto:number): Promise<Equipment[]> {
   const { data, error } = await supabase
     .from("equipos")
-    .select("*")
+    .select("*,tipo_equipos!fk_tipo_equipo(*)")
     .eq("id_puesto",idPuesto)
   if (error) throw error;
   return data || [];

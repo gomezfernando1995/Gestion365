@@ -26,6 +26,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import "dayjs/locale/es";
+import { textOrganic } from "../utils/textFormat";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -343,7 +344,7 @@ export default function Incidents() {
                       </span>
                     </td>
                     <td className="p-3 text-gray-600">
-                      {incident.usuarios?.nombre ? `${incident.usuarios.nombre}` : "Sin asignar"}
+                      {incident.usuario_reporta?.nombre ? `${textOrganic(incident.usuario_reporta.nombre)}` : "Sin asignar"}
                     </td>
                     <td className="p-3">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(incident.estado_incidentes?.descripcion)}`}>

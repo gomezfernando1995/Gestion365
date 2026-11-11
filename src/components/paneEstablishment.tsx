@@ -1,43 +1,50 @@
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Station } from "../services/stationsService";
 import type { Equipment } from "../services/equipmentService";
 import type { Sector } from "../services/sectorsServices";
 import type { Incidente } from "../types/Incidente";
-import { useEstablishment } from "../hooks/useEstablishment";
 import { useEquipment } from "../hooks/useEquipment";
+import { getCurrentUserLocalStorage } from "../utils/auth";
+import { useEstablishment } from "../hooks/useEstablishment";
+import { useState } from "react";
 
 interface PanelEstablishmentProps {
     incidentsByEstablishment?: Incidente[];
     sectores?: Sector[];
     puestos?: Station[];
     equipos?: Equipment[];
+    usersByEstablishment?: any[];
     navigate: (path: string) => void;
     formatFechaCustom: (fecha: string) => string;
+    onSelectSector?: (sector: Sector) => void;
+    activeTab?: string; // 👈 Asegúrate de que tenga el signo "?" aquí
+    onTabChange?: (tab: string) => void;
 }
 
 export default function PanelEstablishment({
     incidentsByEstablishment = [],
     sectores = [],
     puestos = [],
-    
     navigate,
     formatFechaCustom,
+    activeTab = "Historial Incidentes", //,
+    onSelectSector = () => {},  // 👈 Función vacía por defecto
+    onTabChange = () => {},      // 👈 Función vacía por defecto
 }: PanelEstablishmentProps) {
-    const [activeTab, setActiveTab] = useState<string>("Historial Incidentes");
+    const { equipments } = useEquipment();
     const [openSector, setOpenSector] = useState<number | null>(null);
     const [openPuesto, setOpenPuesto] = useState<number | null>(null);
-    const { equipments } = useEquipment();
 
-
-    // Asegurar que las listas siempre sean arreglos iterables
     const safeIncidents = incidentsByEstablishment ?? [];
     const safeSectores = sectores ?? [];
     const safePuestos = puestos ?? [];
     const safeEquipos = equipments ?? [];
     const { usersByEstablishment } = useEstablishment();
-    const userLocalStorage = JSON.parse(localStorage.getItem("currentUser") || "{}");
-    const isAdmin = userLocalStorage.idrol === 6 || userLocalStorage.idrol === 13 || userLocalStorage.idrol === 2;
+    const safeUsers = usersByEstablishment ?? [];
+
+    const userLocalStorage = getCurrentUserLocalStorage();
+    const idRol = userLocalStorage?.idrol;
+    const isAdmin = idRol === 6 || idRol === 13 || idRol === 2;
 
     return (
         <div className="bg-white shadow rounded-xl p-3 flex flex-col">
@@ -47,19 +54,21 @@ export default function PanelEstablishment({
                     <button
                         key={tab}
                         type="button"
-                        onClick={() => setActiveTab(tab)}
-                        className={`py-2 text-center font-semibold flex items-center justify-center gap-2 rounded-lg transition-all duration-300 ${activeTab === tab
-                            ? "bg-blue-500 text-white shadow-md"
-                            : "bg-white text-gray-700 hover:bg-gray-100"
-                            }`}
+                        onClick={() => onTabChange(tab)}// 👈 3. Notificamos al padre el cambio
+                        className={`py-2 text-center font-semibold flex items-center justify-center gap-2 rounded-lg transition-all duration-300 cursor-pointer ${
+                            activeTab === tab
+                                ? "bg-blue-500 text-white shadow-md"
+                                : "bg-white text-gray-700 hover:bg-gray-100"
+                        }`}
                     >
-                        {tab === "Historial Incidentes" ? `${tab}-${safeIncidents.length}` : tab}
+                        {tab === "Historial Incidentes" ? `${tab} (${safeIncidents.length})` : tab}
+                        {tab === "Usuarios" ? ` (${safeUsers.length})` : ""}
                     </button>
                 ))}
             </div>
 
             {/* Contenido dinámico */}
-            <div className="mt-3 overflow-y-auto flex flex-col mb-3">
+            <div className="mt-3 overflow-y-auto flex flex-col mb-3 max-h-150">
                 <AnimatePresence mode="wait">
                     {activeTab === "Historial Incidentes" && (
                         <motion.div
@@ -69,7 +78,7 @@ export default function PanelEstablishment({
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
                         >
-                            <header className="bg-gray-300 p-3 font-bold text-gray-500 flex items-center sticky top-0 w-full z-10">
+                            <header className="bg-gray-300 p-3 font-bold text-gray-500 flex items-center sticky top-0 w-full z-10 rounded-md mb-2">
                                 <button
                                     type="button"
                                     className="bg-gray-100 p-2 hover:text-blue-600 rounded-lg text-sm transition"
@@ -87,26 +96,26 @@ export default function PanelEstablishment({
                                     <motion.div
                                         key={inc.id_incidente}
                                         onClick={() => navigate(`/incidents/${inc.id_incidente}`)}
-                                        className="p-3 flex justify-center bg-gray-200 shadow rounded-md w-full cursor-pointer my-2"
+                                        className="p-2 flex justify-center bg-gray-100 shadow-sm rounded-md w-full cursor-pointer my-2"
                                         whileHover={{ scale: 1.01 }}
                                     >
-                                        <div className="bg-white text-sm grid grid-cols-[15%_10%_30%_40%_5%] w-[95%] max-w-5xl h-21 place-items-center hover:bg-gray-100 mx-auto transition rounded-md p-2">
-                                            <div className="text-black text-lg text-center">
+                                        <div className="bg-white text-sm grid grid-cols-[15%_10%_30%_40%_5%] w-full items-center hover:bg-gray-50 transition rounded-md p-2">
+                                            <div className="text-black text-base font-medium text-center">
                                                 {formatFechaCustom(inc.fecha_inicio ?? "")}
                                             </div>
                                             <div className="text-center">
-                                                <span className="text-gray-500 text-xs">Id</span>
-                                                <p className="font-black text-base">#{inc.id_incidente}</p>
+                                                <span className="text-gray-400 text-xs block">Id</span>
+                                                <span className="font-bold text-gray-800">#{inc.id_incidente}</span>
                                             </div>
-                                            <div className="text-center">
-                                                <span className="text-gray-500 text-xs">Título</span>
-                                                <p className="font-black text-base truncate max-w-45">
+                                            <div className="text-center px-2">
+                                                <span className="text-gray-400 text-xs block">Título</span>
+                                                <p className="font-bold text-gray-800 truncate" title={inc.titulo}>
                                                     {inc.titulo}
                                                 </p>
                                             </div>
-                                            <div className="text-center">
-                                                <span className="text-gray-500 text-xs">Establecimiento</span>
-                                                <p className="font-black text-base truncate max-w-50">
+                                            <div className="text-center px-2">
+                                                <span className="text-gray-400 text-xs block">Establecimiento</span>
+                                                <p className="font-bold text-gray-800 truncate">
                                                     {inc.establecimientos?.nombre ?? "Sin nombre"}
                                                 </p>
                                             </div>
@@ -124,7 +133,7 @@ export default function PanelEstablishment({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
-                            className="p-3"
+                            className="p-1"
                         >
                             {safeSectores.length === 0 ? (
                                 <p className="p-4 text-center text-gray-500 text-sm">
@@ -133,28 +142,43 @@ export default function PanelEstablishment({
                             ) : (
                                 safeSectores.map((sector: any) => {
                                     const currentSectorId = sector.id_sector ?? sector.idSector;
-
-                                    // 1. Filtrar los puestos de este sector (compatible id_sector / idSector)
                                     const puestosDelSector = safePuestos.filter((p: any) => {
-                                        const pSectorId = p.id_sector ?? p.idSector ?? p.id_sectores; // verificar también plurales o aliases
+                                        const pSectorId = p.id_sector ?? p.idSector ?? p.id_sectores;
                                         if (pSectorId === undefined || pSectorId === null) return false;
                                         return String(pSectorId) === String(currentSectorId);
                                     });
 
                                     return (
-                                        <div key={currentSectorId} className="mb-4">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setOpenSector(openSector === currentSectorId ? null : currentSectorId)
-                                                }
-                                                className="w-full text-left font-bold text-lg bg-gray-50 p-3 rounded shadow hover:bg-blue-50 transition flex justify-between items-center"
-                                            >
-                                                <span>{sector.nombre}</span>
-                                                <span className="text-xs text-gray-400">
+                                        <div key={currentSectorId} className="mb-3">
+                                            <div className="w-full text-left font-bold text-md bg-gray-50 p-3 rounded-lg shadow-sm hover:bg-blue-50 transition flex justify-between items-center border border-gray-200">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setOpenSector(openSector === currentSectorId ? null : currentSectorId);
+
+                                                        if (onSelectSector) {
+                                                            onSelectSector({
+                                                                ...sector,
+                                                                puestos: puestosDelSector.map((puesto: any) => ({
+                                                                    ...puesto,
+                                                                    equipos: safeEquipos.filter(
+                                                                        (e: any) =>
+                                                                            Number(e.id_puesto ?? e.idPuesto) ===
+                                                                            Number(puesto.id_puesto ?? puesto.idPuesto)
+                                                                    ),
+                                                                })),
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="flex-1 text-left cursor-pointer"
+                                                >
+                                                    <span className="text-gray-800">{sector.nombre}</span>
+                                                </button>
+
+                                                <span className="text-xs bg-blue-100 text-blue-700 py-1 px-2.5 rounded-full font-semibold mr-2">
                                                     {puestosDelSector.length} Puestos
                                                 </span>
-                                            </button>
+                                            </div>
 
                                             <AnimatePresence>
                                                 {openSector === currentSectorId && (
@@ -163,7 +187,7 @@ export default function PanelEstablishment({
                                                         animate={{ opacity: 1, height: "auto" }}
                                                         exit={{ opacity: 0, height: 0 }}
                                                         transition={{ duration: 0.3 }}
-                                                        className="ml-6 mt-2 border-l-2 border-blue-200 pl-3"
+                                                        className="ml-4 mt-2 border-l-2 border-blue-200 pl-3 space-y-2"
                                                     >
                                                         {puestosDelSector.length === 0 ? (
                                                             <p className="text-xs text-gray-400 italic py-1">
@@ -171,14 +195,14 @@ export default function PanelEstablishment({
                                                             </p>
                                                         ) : (
                                                             puestosDelSector.map((puesto: any) => {
-                                                                const currentPuestoId = puesto.id_puesto;
+                                                                const currentPuestoId = puesto.id_puesto ?? puesto.idPuesto;
                                                                 const equiposDelPuesto = safeEquipos.filter((e: any) => {
                                                                     const ePuestoId = e.id_puesto ?? e.idPuesto;
                                                                     return Number(ePuestoId) === Number(currentPuestoId);
                                                                 });
 
                                                                 return (
-                                                                    <div key={currentPuestoId} className="mb-2">
+                                                                    <div key={currentPuestoId} className="bg-white p-2 rounded border border-gray-100 shadow-xs">
                                                                         <button
                                                                             type="button"
                                                                             onClick={() =>
@@ -186,10 +210,10 @@ export default function PanelEstablishment({
                                                                                     openPuesto === currentPuestoId ? null : currentPuestoId
                                                                                 )
                                                                             }
-                                                                            className="w-full text-left font-semibold text-gray-700 bg-gray-100 p-2 rounded hover:bg-blue-100 transition flex justify-between items-center text-sm"
+                                                                            className="w-full text-left font-semibold text-gray-700 flex justify-between items-center text-sm cursor-pointer"
                                                                         >
                                                                             <span>{puesto.descripcion || puesto.puestored || `Puesto #${currentPuestoId}`}</span>
-                                                                            <span className="text-xs text-gray-400">
+                                                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
                                                                                 {equiposDelPuesto.length} Equipos
                                                                             </span>
                                                                         </button>
@@ -201,18 +225,18 @@ export default function PanelEstablishment({
                                                                                     animate={{ opacity: 1, y: 0 }}
                                                                                     exit={{ opacity: 0, y: -5 }}
                                                                                     transition={{ duration: 0.2 }}
-                                                                                    className="ml-6 mt-1 list-disc text-sm text-gray-600 space-y-1"
+                                                                                    className="mt-2 ml-2 space-y-1 border-t pt-2"
                                                                                 >
                                                                                     {equiposDelPuesto.length === 0 ? (
-                                                                                        <li className="list-none text-xs text-gray-400 italic">
+                                                                                        <li className="text-xs text-gray-400 italic">
                                                                                             Sin equipos registrados
                                                                                         </li>
                                                                                     ) : (
                                                                                         equiposDelPuesto.map((equipo: any) => {
                                                                                             const eqId = equipo.id_equipo ?? equipo.idEquipo;
                                                                                             return (
-                                                                                                <li key={eqId}>
-                                                                                                    #{eqId} | {equipo.nombre} {equipo.marca ? `| ${equipo.marca}` : ""} {equipo.modelo ? `| ${equipo.modelo}` : ""} {equipo.numero_serie ? `| S/N: ${equipo.numero_serie}` : ""}
+                                                                                                <li key={eqId} className="text-xs text-gray-600 bg-gray-50 p-1.5 rounded">
+                                                                                                    <span className="font-bold">#{eqId}</span> {equipo.nombre} {equipo.marca ? `| ${equipo.marca}` : ""}
                                                                                                 </li>
                                                                                             );
                                                                                         })
@@ -241,38 +265,42 @@ export default function PanelEstablishment({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
-                            className="p-3 text-gray-600 text-sm"
+                            className="p-1"
                         >
-                            {usersByEstablishment.length === 0 ? (
+                            {safeUsers.length === 0 ? (
                                 <p className="p-4 text-center text-gray-500 text-sm">
                                     No hay usuarios asignados a este establecimiento.
                                 </p>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {usersByEstablishment.map((usuario: any) => (
-                                        <div
-                                            key={usuario.id_usuario || usuario.idusuario || usuario.id}
-                                            onClick={() => {
-                                                if (isAdmin) {
-                                                    navigate(`/users/${usuario.idusuario || usuario.id_usuario || usuario.id}`);
-                                                }
-                                            }}
-                                            className={`flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100 shadow-sm transition ${isAdmin ? "cursor-pointer hover:bg-gray-100" : "cursor-default"
+                                    {safeUsers.map((usuario: any) => {
+                                        const userId = usuario.id_usuario || usuario.idusuario || usuario.id;
+                                        return (
+                                            <div
+                                                key={userId}
+                                                onClick={() => {
+                                                    if (isAdmin && userId) {
+                                                        navigate(`/users/${userId}`);
+                                                    }
+                                                }}
+                                                className={`flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100 shadow-sm transition ${
+                                                    isAdmin ? "cursor-pointer hover:bg-gray-100" : "cursor-default"
                                                 }`}
-                                        >
-                                            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                                                {usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : "U"}
+                                            >
+                                                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0">
+                                                    {usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : "U"}
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <p className="font-semibold text-gray-800 text-sm truncate">
+                                                        {usuario.nombre} {usuario.apellido}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 truncate">
+                                                        {usuario.email || usuario.correo}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-gray-800 text-sm">
-                                                    {usuario.nombre} {usuario.apellido}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {usuario.email || usuario.correo}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </motion.div>
