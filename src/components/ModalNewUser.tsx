@@ -24,6 +24,8 @@ const initialState: Usuario = {
     apellido: "",
     correo: "",
     usuario: "",
+    celular: "",
+    genero: "",
     contrasenia: "",
     direccion: "",
     img: "",

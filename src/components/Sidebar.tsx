@@ -18,7 +18,6 @@ import {
 } from "@heroicons/react/24/solid";
 import { logout } from '../services/authService';
 import Logo from './../assets/logo.png';
-import Favicon from './../assets/favicon.png';
 import { firstLetter, textOrganic } from '../utils/textFormat';
 import { getCurrentUserLocalStorage } from '../utils/auth';
 
