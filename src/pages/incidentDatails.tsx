@@ -282,8 +282,8 @@ export default function IncidentDetails() {
                             <li className="flex justify-baseline items-center">
                                 <span className="font-semibold text-gray-500">Fecha creación:</span>
                                 <span className="font-medium text-gray-800 pl-3" >
-                                    {ticket.fecha_inicio
-                                        ? dayjs(ticket.fecha_inicio).format("DD/MM/YYYY HH:mm")
+                                    {ticket.created_at
+                                        ? dayjs(ticket.created_at).format("DD/MM/YYYY HH:mm")
                                         : "N/A"}
                                 </span>
                             </li>

@@ -360,7 +360,7 @@ export default function Incidents() {
                       </span>
                     </td>
                     <td className="p-3 text-xs text-gray-500 whitespace-nowrap">
-                      {getElapsedTime(incident.fecha_inicio)}
+                      {getElapsedTime(incident.created_at)}
                     </td>
                     <td className="p-3 text-xs text-gray-500 whitespace-nowrap">
                       {getElapsedTime(incident.updated_at)}

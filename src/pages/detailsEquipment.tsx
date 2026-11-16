@@ -110,7 +110,7 @@ export default function EquipmentDetailView({ equipo }: EquipmentDetailViewProps
                     incidentesList.map((inc: any) => (
                       <tr key={inc.id_incidente} className="hover:bg-blue-50 transition-colors">
                         <td className="p-2.5 text-center text-gray-500">
-                          {inc.fecha_inicio ? new Date(inc.fecha_inicio).toLocaleDateString("es-AR") : "—"}
+                          {inc.created_at ? new Date(inc.created_at).toLocaleDateString("es-AR") : "—"}
                         </td>
                         <td className="p-2.5 text-center font-semibold text-gray-700">#{inc.id_incidente}</td>
                         <td className="p-2.5 font-medium text-gray-900">{inc.titulo || inc.descripcion}</td>

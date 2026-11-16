@@ -61,7 +61,7 @@ export async function createUser(user: Usuario) {
   return data;
 }
 //ACTUALIZACION DE USUARIOS
-export async function updateUser(id: number, user: Partial<Usuario>) {
+export async function updateUser(id: number | string, user: Partial<Usuario>) {
   const { data, error } = await supabase.from("usuarios").update(user).eq("idusuario", id);
   if (error) throw new Error(error.message);
   return data;

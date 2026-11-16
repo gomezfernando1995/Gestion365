@@ -51,11 +51,68 @@ export const ModalCerrarIncident: React.FC<SimpleAssignModalProps> = ({
     if (!selectedStateId || !incident?.id_incidente || !resolucion.trim()) return;
 
     setIsLoading(true);
+
+    let cierre: string | undefined = undefined;
+    let tiempoResolucionHoras: number | undefined = undefined;
+    let cumpleSla: boolean = true;
+
+    const numericStateId = Number(selectedStateId);
+
+   // Si el estado seleccionado es de cierre/resolución
+    if (ALLOWED_STATE_IDS.includes(numericStateId)) {
+      const fechaCierreDate = new Date();
+      cierre = fechaCierreDate.toISOString();
+
+      const fechaInicio = incident.fecha_inicio || incident.created_at;
+      if (fechaInicio) {
+        const isoFechaInicio = fechaInicio.includes(" ") 
+          ? fechaInicio.replace(" ", "T") 
+          : fechaInicio;
+
+        const inicioMs = new Date(isoFechaInicio).getTime();
+        const finMs = fechaCierreDate.getTime();
+        const diffMs = finMs - inicioMs;
+
+        if (!isNaN(inicioMs) && diffMs > 0) {
+          // 1. Calculamos horas, minutos y segundos exactos para el tipo INTERVAL de Postgres
+          const totalSegundos = Math.floor(diffMs / 1000);
+          const horas = Math.floor(totalSegundos / 3600);
+          const minutos = Math.floor((totalSegundos % 3600) / 60);
+          const segundos = totalSegundos % 60;
+          const milisegundos = diffMs % 1000;
+
+          // Formato exacto que acepta Postgres interval: "HH:MM:SS.sss"
+          tiempoResolucionHoras = `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}.${String(milisegundos).padStart(3, '0')}` as any;
+
+          // Para la validación de SLA, también necesitamos el número en horas flotantes
+          const horasFlotantes = Number((diffMs / (1000 * 60 * 60)).toFixed(2));
+
+          // Validación de SLA según prioridad
+          const prioridadDesc = incident.prioridad_incidentes?.descripcion?.toLowerCase() || "";
+          let limiteHoras = 24; // Valor por defecto (Media)
+          
+          if (prioridadDesc.includes("crítica") || prioridadDesc.includes("critica")) limiteHoras = 2;
+          else if (prioridadDesc.includes("urgente")) limiteHoras = 8;
+          else if (prioridadDesc.includes("media")) limiteHoras = 24;
+          else if (prioridadDesc.includes("baja")) limiteHoras = 48;
+
+          if (!prioridadDesc.includes("informativa")) {
+            cumpleSla = horasFlotantes <= limiteHoras;
+          }
+        } else {
+          tiempoResolucionHoras = "00:00:00" as any;
+        }
+      }
+    }
+
     try {
       const payload = {
-        id_estado_incidente: Number(selectedStateId),
-        resolucion: resolucion.trim(), // Se envía la justificación del cierre
+        id_estado_incidente: numericStateId,
+        resolucion: resolucion.trim(),
         updated_at: new Date().toISOString(),
+        fecha_cierre: cierre,
+        tiempo_resolucion: tiempoResolucionHoras, 
+        sla_cumple: cumpleSla, 
       };
 
       await updateIncident(Number(incident.id_incidente), payload);

@@ -101,7 +101,7 @@ export default function PanelEstablishment({
                                     >
                                         <div className="bg-white text-sm grid grid-cols-[15%_10%_30%_40%_5%] w-full items-center hover:bg-gray-50 transition rounded-md p-2">
                                             <div className="text-black text-base font-medium text-center">
-                                                {formatFechaCustom(inc.fecha_inicio ?? "")}
+                                                {formatFechaCustom(inc.created_at ?? "")}
                                             </div>
                                             <div className="text-center">
                                                 <span className="text-gray-400 text-xs block">Id</span>

@@ -137,6 +137,23 @@ export async function getIncidentsByUser(userId: number) {
   return data || [];
 }
 
+
+export async function getIncidentsByUserAssing(userId: number) {
+  const parsedId = Number(userId);
+  if (isNaN(parsedId) || !userId) {
+    console.warn("ID de usuario no válido para consultar incidentes:", userId);
+    return []; // o lanzar un error controlado
+  }
+  
+  const { data, error } = await supabase
+    .from("incidentes")
+    .select(`*,establecimientos!fk_establecimiento(*)`)
+    .eq("id_usuario_asignado", parsedId); // 👈 Filtra exclusivamente por los asignados al usuario
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
 export async function getIncidentsReportbyEstablishment(idEstablishment: number) {
   const { data, error } = await supabase
     .from("incidentes")

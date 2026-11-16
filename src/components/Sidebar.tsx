@@ -6,15 +6,15 @@ import {
   ChartBarIcon,
   UsersIcon,
   TicketIcon,
-  CogIcon, 
+  CogIcon,
   ComputerDesktopIcon,
-  ExclamationTriangleIcon, 
+  ExclamationTriangleIcon,
   ArrowLeftStartOnRectangleIcon,
   BookOpenIcon,
   Bars3Icon,
   XMarkIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon
 } from "@heroicons/react/24/solid";
 import { logout } from '../services/authService';
 import Logo from './../assets/logo.png';
@@ -85,39 +85,39 @@ export default function Sidebar() {
 
       {/* Contenedor principal del Sidebar con ancho dinámico según isCollapsed */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 bg-gray-800 text-white flex flex-col h-screen transform transition-all duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        } ${isCollapsed ? "md:w-20" : "md:w-64"} w-64 shadow-2xl md:shadow-none`}
+        className={`fixed md:static inset-y-0 left-0 z-50 bg-gray-800 text-white flex flex-col h-screen transform transition-all duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          } ${isCollapsed ? "md:w-20" : "md:w-64"} w-64 shadow-2xl md:shadow-none`}
       >
         {/* Cabecera del Sidebar */}
-        <div className="py-3 px-4 border-b border-gray-700 flex items-center justify-between relative min-h-18.25">
-          {!isCollapsed ? (
-            <img src={Logo} alt="Logo Sidebar" className="w-38 ml-4 object-contain transition-all" />
-          ) : (
-            <div className="w-full flex justify-center">
-              <img src={Favicon} alt="Favicon" className="w-14 h-14 object-contain" />
-            </div>
-          )}
-          {/* Botón de cerrar para móvil */}
-          <button
-            onClick={() => setIsOpen(false)}
-            className="md:hidden text-gray-400 hover:text-white p-1 rounded"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+        <div className="py-2 px-4 border-b border-gray-700 flex items-center justify-between relative min-h-18.25 gap-2">
+          {/* Sección del logo (solo se muestra si no está colapsado) */}
+          <div className={`flex items-center overflow-hidden transition-all ${isCollapsed ? "hidden" : "block"}`}>
+            <img src={Logo} alt="Logo Sidebar" className="w-38 ml-2 object-contain transition-all" />
+          </div>
 
-          {/* Botón para colapsar/expandir en escritorio (oculto en mobile) */}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden md:flex absolute -right-3 top-6 bg-gray-700 hover:bg-gray-600 text-white p-1 rounded-full shadow-md border border-gray-600 items-center justify-center transition"
-            title={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-          >
-            {isCollapsed ? (
-              <ChevronRightIcon className="h-4 w-4" />
-            ) : (
-              <ChevronLeftIcon className="h-4 w-4" />
-            )}
-          </button>
+          {/* Contenedor del botón en escritorio (centrado cuando está colapsado, a la derecha cuando está expandido) */}
+          <div className={`flex items-center ${isCollapsed ? "w-full justify-center" : "gap-1"}`}>
+            {/* Botón de cerrar para móvil */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="md:hidden text-gray-400 hover:text-white p-1 rounded"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+
+            {/* Botón para colapsar/expandir en escritorio */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden md:flex bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white p-2 rounded-lg  border-gray-700 items-center justify-center transition shadow-sm"
+              title={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+            >
+              {isCollapsed ? (
+                <ChevronDoubleRightIcon className="h-4 w-4" />
+              ) : (
+                <ChevronDoubleLeftIcon className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Nombre de la empresa / establecimiento (se oculta si está colapsado) */}
@@ -136,9 +136,8 @@ export default function Sidebar() {
                 key={item.name}
                 onClick={() => navigate(item.ruta!)}
                 title={isCollapsed ? item.name : ""}
-                className={`flex items-center gap-3 p-2.5 rounded-lg transition cursor-pointer relative group ${
-                  isActive ? "bg-gray-700 text-blue-400 font-medium" : "hover:bg-gray-700/60 text-gray-300"
-                }`}
+                className={`flex items-center gap-3 p-2.5 rounded-lg transition cursor-pointer relative group ${isActive ? "bg-gray-700 text-blue-400 font-medium" : "hover:bg-gray-700/60 text-gray-300"
+                  }`}
               >
                 <item.icon className="h-5 w-5 shrink-0 mx-auto md:mx-0" />
                 <span className={`whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? "md:hidden" : "block"}`}>

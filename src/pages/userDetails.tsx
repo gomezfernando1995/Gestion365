@@ -1,17 +1,21 @@
 import { useNavigate } from "react-router-dom";
-import { UserIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
-
+import { UserIcon, ArrowLeftIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import { useUsers } from "../hooks/useUsers";
 import Loader from "../components/Loader";
 import { useIncidentes } from "../hooks/useIncidents";
 import { firstLetter, formatFechaCustom, textOrganic } from "../utils/textFormat";
-import React from "react";
+import React, { useState } from "react";
+import { getCurrentUserLocalStorage } from "../utils/auth";
+import { ModalModifyUser } from "../components/ModalModifyUser";
 
 export default function UserDetails() {
   const navigate = useNavigate();
-  // 1. Usar loadingUser para el estado de carga del usuario individual
-  const { user, loadingUser } = useUsers();
-  const { incidentsReportbyUser = [], incidentsResolvedbyUser = [], incidentsByUser = [] } = useIncidentes();
+  // 1. Extraemos refetchUser (o la función que recargue el usuario) de tu hook useUsers
+  const { user, loadingUser, refetchUser } = useUsers();
+  const { incidentsReportbyUser = [], incidentsAssing = [], incidentsByUser = [] } = useIncidentes();
+  const [openModalModifyUser, setOpenModalModifyUser] = useState(false);
+  const userLocalStorage = getCurrentUserLocalStorage();
+  const isAdmin = userLocalStorage?.idrol === 6 || userLocalStorage?.idrol === 13 || userLocalStorage?.idrol === 2;
 
   // Loader mientras se consulta a Supabase
   if (loadingUser) {
@@ -39,7 +43,7 @@ export default function UserDetails() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full p-2 animate-fadeIn gap-3 rounded bg-gray-100 text-gray-900">
+    <div className="flex flex-col h-screen w-full p-2 animate-fadeIn gap-3 rounded bg-gray-100 text-gray-900 relative">
       {/* Navbar */}
       <nav className="flex flex-col w-full py-1 border-b rounded-lg bg-white border-gray-200">
         <div className="flex items-center justify-between p-3">
@@ -63,9 +67,9 @@ export default function UserDetails() {
       <div className="grow grid grid-cols-12 gap-2 p-2 h-full overflow-y-auto">
         {/* Contenido principal */}
         <main className="col-span-9 grid grid-rows-[19rem__37rem] gap-2 h-screen">
-          
+
           {/* Perfil */}
-          <section className="grid grid-cols-[27%_5px_70%] bg-white shadow rounded-2xl">
+          <section className="grid grid-cols-[27%_5px_70%] bg-white shadow rounded-2xl relative">
             <div className="flex flex-col items-center p-5">
               {user?.img ? (
                 <img
@@ -88,7 +92,7 @@ export default function UserDetails() {
               <div className="flex w-full mt-5">
                 {[
                   { label: "Reportados", value: incidentsReportbyUser.length },
-                  { label: "Resueltos", value: incidentsResolvedbyUser.length },
+                  { label: "Asignados", value: incidentsAssing.length },
                 ].map((item, idx) => (
                   <React.Fragment key={idx}>
                     <div className="text-center flex-1">
@@ -109,7 +113,17 @@ export default function UserDetails() {
             <div className="bg-gray-100 rounded-2xl"></div>
 
             {/* Columna derecha */}
-            <div className="grid grid-cols-3 gap-2 p-3">
+            <div className="grid grid-cols-3 gap-2 p-3 relative">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setOpenModalModifyUser(true)}
+                  className="absolute top-3 right-3 p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition rounded-lg cursor-pointer flex items-center gap-1 text-xs font-medium z-10"
+                  title="Editar usuario"
+                >
+                  <PencilSquareIcon className="w-5 h-5" />
+                </button>
+              )}
               {[
                 {
                   fields: [
@@ -192,7 +206,7 @@ export default function UserDetails() {
             <div className="mt-3 overflow-y-auto flex flex-col mb-3">
               <header className="bg-gray-300 p-3 font-bold text-gray-500 flex items-center sticky top-0 w-full z-10">
                 <button className="bg-gray-100 p-2 hover:text-blue-600 rounded-lg text-sm">
-                 
+
                 </button>
               </header>
               {incidentsByUser.map((inc) => (
@@ -203,7 +217,7 @@ export default function UserDetails() {
                 >
                   <div className="bg-white text-sm grid grid-cols-[15%_10%_30%_40%_5%] w-[95%] max-w-5xl h-21 place-items-center hover:bg-gray-100 mx-auto">
                     <div className="text-black text-lg text-center">
-                      {formatFechaCustom(inc.fecha_inicio)}
+                      {formatFechaCustom(inc.created_at)}
                     </div>
 
                     <div className="text-center">
@@ -236,6 +250,16 @@ export default function UserDetails() {
           {/* Contenido lateral */}
         </aside>
       </div>
+
+      {/* Modal de Modificación de Usuario */}
+      <ModalModifyUser
+        isOpen={openModalModifyUser}
+        onClose={() => setOpenModalModifyUser(false)}
+        user={user}
+        onSubmitSuccess={() => {
+            refetchUser();
+        }}
+      />
     </div>
   );
 }

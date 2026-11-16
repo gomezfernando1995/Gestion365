@@ -5,7 +5,7 @@ interface IncidenteItem {
   id_incidente: number;
   titulo: string;
   descripcion: string;
-  fecha_inicio: string;
+  created_at: string;
   id_empresa?: number;
   id_establecimiento?: number;
   estado_incidentes?: {
@@ -34,7 +34,7 @@ const IncidentsTable = () => {
             estado_incidentes!fk_estado(descripcion),
             prioridad_incidentes!fk_prioridad(descripcion)
           `)
-          .order('fecha_inicio', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(10);
 
         if (userLocal?.id_empresa) {
@@ -139,7 +139,7 @@ const IncidentsTable = () => {
                   </div>
 
                   <div className="text-right text-[11px] text-gray-400 mt-1 border-t border-gray-100 pt-2">
-                    {i.fecha_inicio ? new Date(i.fecha_inicio).toLocaleDateString() : "-"}
+                    {i.created_at ? new Date(i.created_at).toLocaleDateString() : "-"}
                   </div>
                 </div>
               );
@@ -179,7 +179,7 @@ const IncidentsTable = () => {
                         </span>
                       </td>
                       <td className="py-3 px-3 text-xs text-gray-500 text-right">
-                        {i.fecha_inicio ? new Date(i.fecha_inicio).toLocaleDateString() : "-"}
+                        {i.created_at ? new Date(i.created_at).toLocaleDateString() : "-"}
                       </td>
                     </tr>
                   );

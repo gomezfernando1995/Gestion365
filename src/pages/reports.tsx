@@ -1,12 +1,10 @@
 
 import React, { useState } from "react";
 import { 
-
   Clock, 
   CheckCircle2, 
   AlertTriangle, 
   Calendar, 
-
   TrendingUp, 
 } from "lucide-react";
 

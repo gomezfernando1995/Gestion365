@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getUser, getUsers, getUsersByEstablishment } from "../services/usersService";
 import { useParams } from "react-router-dom";
 import { getAllRoles } from "../services/rolesService";
@@ -39,34 +39,34 @@ export function useUsers() {
   const id_establecimiento = userLocalS?.id_establecimiento ?? null;
   const { id } = useParams();
 
-  // 2. Fetch de usuario individual por ID de URL
-  useEffect(() => {
+  // 1. Función reutilizable para refrescar un solo usuario
+  const fetchSingleUser = useCallback(async () => {
     const numericId = Number(id);
-
     if (!id || isNaN(numericId)) {
       setUser(null);
       setLoadingUser(false);
       return;
     }
 
-    const fetchSingleUser = async () => {
-      setLoadingUser(true);
-      try {
-        const data = await getUser(numericId);
-        setUser(Array.isArray(data) ? data[0] || null : data);
-      } catch (error) {
-        console.error("Error al obtener detalle del usuario:", error);
-        setUser(null);
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-
-    fetchSingleUser();
+    setLoadingUser(true);
+    try {
+      const data = await getUser(numericId);
+      setUser(Array.isArray(data) ? data[0] || null : data);
+    } catch (error) {
+      console.error("Error al obtener detalle del usuario:", error);
+      setUser(null);
+    } finally {
+      setLoadingUser(false);
+    }
   }, [id]);
 
+  // 2. Fetch de usuario individual al cambiar el ID de la URL
+  useEffect(() => {
+    fetchSingleUser();
+  }, [fetchSingleUser]);
+
   // 3. Fetch de listado inicial de usuarios y roles según perfil jerárquico
- useEffect(() => {
+  useEffect(() => {
     const fetchInitialData = async () => {
       setLoadingUsers(true);
       try {
@@ -78,7 +78,6 @@ export function useUsers() {
             if (id_establecimiento) {
               return await getUsersByEstablishment(id_establecimiento);
             }
-            // Admin Global (sin empresa ni establecimiento restrictivo)
             return await getUsers();
           })(),
           getAllRoles()
@@ -101,6 +100,7 @@ export function useUsers() {
     loadingUsers,
     loadingUser,
     userLocalS,
-    allRoles
+    allRoles,
+    refetchUser: fetchSingleUser // 👈 Exportamos esta función para usarla en el componente padre
   };
 }

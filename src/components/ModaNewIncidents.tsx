@@ -30,7 +30,7 @@ export default function IncidentModal({ isOpen, onClose }: IncidentModalProps) {
         id_tipo_ticket: undefined,
         titulo: "",
         descripcion: "",
-        fecha_inicio: "",
+        created_at: "",
         id_estado_incidente: undefined,
         id_usuario_reporta: undefined,
         id_tipo_comentario: 1,
@@ -127,7 +127,7 @@ export default function IncidentModal({ isOpen, onClose }: IncidentModalProps) {
         try {
             const incidente = {
                 ...dataForm,
-                fecha_inicio: new Date().toISOString(),
+                created_at: new Date().toISOString(),
                 id_empresa: userLocal?.id_empresa,
                 id_estado_incidente: 1, // estado inicial
                 id_usuario_reporta: userLocal?.idusuario,

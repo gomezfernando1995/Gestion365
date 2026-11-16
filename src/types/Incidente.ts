@@ -2,12 +2,11 @@ export interface Incidente {
   id_incidente?: number;
   titulo?: string;
   descripcion?: string;
-  fecha_inicio?: string;       // timestamp → ISO string
   fecha_cierre?: string | undefined;
-  created_at?: string;         // timestamptz → ISO string
-  updated_at?: string;         // timestamptz → ISO string
-  sla_tiempo?: string | undefined;        // interval → string
-  tiempo_resolucion?: string | undefined; // interval → string
+  created_at?: string;         
+  updated_at?: string;        
+  sla_tiempo?: boolean | undefined;       
+  tiempo_resolucion?: number | undefined; 
   deleted_at?: string;
   id_establecimiento?: number | undefined;
   id_sector?: number | undefined;

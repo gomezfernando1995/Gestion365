@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getIncidents, getIncidentsResolvedbyUser, getIncidentsReportbyUser, getIncidentsByUser, getIncidentsbyEstablishment, getIncidentsbyEnterprise, getIncidentsbyEquipment } from "../services/incidentsService";
+import { getIncidents, getIncidentsResolvedbyUser, getIncidentsReportbyUser, getIncidentsByUser, getIncidentsbyEstablishment, getIncidentsbyEnterprise, getIncidentsbyEquipment, getIncidentsByUserAssing } from "../services/incidentsService";
 import { supabase } from "../services/supabase";
 import { useParams } from "react-router-dom";
 import { getCurrentUserLocalStorage } from "../utils/auth";
@@ -53,6 +53,7 @@ export function useGeneralIncidents(userLocalS: any) {
 export function useUserIncidents(id: string | number | undefined) {
     const [incidentsReportbyUser, setIncidentsReportbyUser] = useState<any[]>([]);
     const [incidentsResolvedbyUser, setIncidentsResolvedbyUser] = useState<any[]>([]);
+    const [incidentsAssing, setIncidentsAssing] = useState<any[]>([]);
     const [incidentsByUser, setIncidentsByUser] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -67,15 +68,17 @@ export function useUserIncidents(id: string | number | undefined) {
                 setLoading(true);
                 const numericId = Number(id);
 
-                const [data, data2, data3] = await Promise.all([
+                const [data, data2, data3, data4] = await Promise.all([
                     getIncidentsReportbyUser(numericId),
                     getIncidentsResolvedbyUser(numericId),
-                    getIncidentsByUser(numericId)
+                    getIncidentsByUser(numericId),
+                    getIncidentsByUserAssing(numericId)
                 ]);
 
                 setIncidentsReportbyUser(data || []);
                 setIncidentsResolvedbyUser(data2 || []);
                 setIncidentsByUser(data3 || []);
+                setIncidentsAssing(data4 || []);
             } catch (err) {
                 console.error("Error:", err);
             } finally {
@@ -90,17 +93,19 @@ export function useUserIncidents(id: string | number | undefined) {
         incidentsReportbyUser,
         incidentsResolvedbyUser,
         incidentsByUser,
+        incidentsAssing, 
         loadingUserIncidents: loading
     };
 }
 
-// 3. NUEVO: Hook exclusivo para obtener los incidentes del usuario actualmente logueado
+// 3. Hook exclusivo para obtener los incidentes del usuario actualmente logueado
 export function useMyIncidents() {
     const currentUser = getCurrentUserLocalStorage();
     const userId = currentUser?.id_usuario;
 
     const [incidentsReportbyUser, setIncidentsReportbyUser] = useState<any[]>([]);
     const [incidentsResolvedbyUser, setIncidentsResolvedbyUser] = useState<any[]>([]);
+    const [incidentsAssing, setIncidentsAssing] = useState<any[]>([]);
     const [incidentsByUser, setIncidentsByUser] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -115,15 +120,17 @@ export function useMyIncidents() {
                 setLoading(true);
                 const numericId = Number(userId);
 
-                const [data, data2, data3] = await Promise.all([
+                const [data, data2, data3, data4] = await Promise.all([
                     getIncidentsReportbyUser(numericId),
                     getIncidentsResolvedbyUser(numericId),
-                    getIncidentsByUser(numericId)
+                    getIncidentsByUser(numericId),
+                    getIncidentsByUserAssing(numericId)
                 ]);
 
                 setIncidentsReportbyUser(data || []);
                 setIncidentsResolvedbyUser(data2 || []);
                 setIncidentsByUser(data3 || []);
+                setIncidentsAssing(data4 || []);
             } catch (err) {
                 console.error("Error:", err);
             } finally {
@@ -138,6 +145,7 @@ export function useMyIncidents() {
         incidentsReportbyUser,
         incidentsResolvedbyUser,
         incidentsByUser,
+        incidentsAssing,
         loadingMyIncidents: loading
     };
 }
@@ -182,6 +190,7 @@ export function useIncidentes() {
         incidentsReportbyUser,
         incidentsResolvedbyUser,
         incidentsByUser,
+        incidentsAssing,
         loadingUserIncidents
     } = useUserIncidents(id);
 
@@ -190,6 +199,7 @@ export function useIncidentes() {
         loadingIncidents: loadingIncidents || loadingUserIncidents,
         incidentsReportbyUser,
         incidentsResolvedbyUser,
-        incidentsByUser
+        incidentsByUser,
+        incidentsAssing
     };
 }

@@ -1,12 +1,10 @@
 import { useState, useMemo } from "react";
 import {
-    ExclamationTriangleIcon,
     MagnifyingGlassIcon
 } from "@heroicons/react/24/solid";
 import { getCurrentUserLocalStorage } from "../utils/auth";
 import { useIncidentes } from "../hooks/useIncidents";
 import { useNavigate } from "react-router-dom";
-
 
 export default function MyIncidents() {
     const [activeTab, setActiveTab] = useState<"asignados" | "creados" | "resueltos" | "todos">("asignados");
@@ -18,7 +16,7 @@ export default function MyIncidents() {
 
     const { incidents, incidentsByUser } = useIncidentes();
 
-    const userIncidents = useMemo(() => {       
+    const userIncidents = useMemo(() => {
         if (incidentsByUser && incidentsByUser.length > 0) {
             return incidentsByUser;
         }
@@ -32,14 +30,21 @@ export default function MyIncidents() {
         return userIncidents.filter((inc) => {
             const isAsignado = inc.id_usuario_asignado === currentUserId;
             const isCreado = inc.id_usuario_reporta === currentUserId;
-            const isResuelto = inc.estado_incidentes?.descripcion?.toLowerCase().includes("resuelto") ||
-                inc.estado_incidentes?.descripcion?.toLowerCase().includes("cerrado");
 
-            let cumpleTab = true;
+            const estadoDesc = inc.estado_incidentes?.descripcion?.toLowerCase() || "";
+            const isResuelto = estadoDesc.includes("resuelto") || estadoDesc.includes("cerrado") || estadoDesc.includes("cancelado");
 
-            if (activeTab === "asignados") cumpleTab = isAsignado && !isResuelto;
-            else if (activeTab === "creados") cumpleTab = isCreado;
-            else if (activeTab === "resueltos") cumpleTab = isResuelto;
+            let cumpleTab = false;
+
+            if (activeTab === "asignados") {
+                cumpleTab = isAsignado;
+            } else if (activeTab === "creados") {
+                cumpleTab = isCreado;
+            } else if (activeTab === "resueltos") {
+                cumpleTab = isResuelto;
+            } else if (activeTab === "todos") {
+                cumpleTab = true;
+            }
 
             if (!cumpleTab) return false;
 
@@ -54,13 +59,71 @@ export default function MyIncidents() {
         });
     }, [userIncidents, activeTab, searchTerm, currentUserId]);
 
+    const getStatusColor = (status?: string) => {
+        switch (status) {
+            case "Abierto":
+                return "bg-red-800 text-white";
+            case "En Proceso":
+                return "bg-amber-500 text-white";
+            case "En análisis":
+                return "bg-orange-500 text-white";
+            case "Resuelto":
+                return "bg-green-600 text-white";
+            case "Cerrado":
+                return "bg-gray-500 text-white";
+            case "Cancelado":
+                return "bg-gray-500 text-white";
+            case "Pendiente de información":
+                return "bg-gray-100 text-yellow-500";
+            default:
+                return "bg-gray-200 text-gray-700";
+        }
+    };
+
     const counts = useMemo(() => {
         return {
-            asignados: userIncidents.filter(i => i.id_usuario_asignado === currentUserId && !i.estado_incidentes?.descripcion?.toLowerCase().includes("resuelto")).length,
+            asignados: userIncidents.filter(i => {
+                //const estado = i.estado_incidentes?.descripcion?.toLowerCase() || "";
+                // const isResuelto = estado.includes("resuelto") || estado.includes("cerrado") || estado.includes("cancelado");
+                return i.id_usuario_asignado === currentUserId;
+            }).length,
             creados: userIncidents.filter(i => i.id_usuario_reporta === currentUserId).length,
-            resueltos: userIncidents.filter(i => i.estado_incidentes?.descripcion?.toLowerCase().includes("resuelto") || i.estado_incidentes?.descripcion?.toLowerCase().includes("cerrado")).length,
+            resueltos: userIncidents.filter(i => {
+                const estado = i.estado_incidentes?.descripcion?.toLowerCase() || "";
+                return (estado.includes("resuelto") || estado.includes("cerrado") || estado.includes("cancelado"));
+            }).length,
             todos: userIncidents.length
         };
+    }, [userIncidents, currentUserId]);
+
+    const averageCreated = useMemo((): number => {
+        const todos = userIncidents.filter(inc =>
+            inc.id_usuario_reporta === currentUserId
+        ).length;
+        if (todos === 0) return 0;
+
+        const resueltosAsignados = userIncidents.filter(inc =>
+            inc.id_usuario_reporta === currentUserId &&
+            inc.id_usuario_asignado !== currentUserId &&
+            inc.estado_incidentes?.descripcion?.toLowerCase().includes("resuelto")
+        ).length;
+
+        return Number(((resueltosAsignados / todos) * 100).toFixed(1));
+    }, [userIncidents, currentUserId]);
+
+    const averageAssing = useMemo((): number => {
+        const todos = userIncidents.filter(inc =>
+            inc.id_usuario_asignado === currentUserId
+        ).length;
+
+        const resueltosAsignados = userIncidents.filter(inc =>
+            inc.id_usuario_asignado === currentUserId &&
+            (inc.estado_incidentes?.descripcion?.toLowerCase().includes("resuelto") ||
+                inc.estado_incidentes?.descripcion?.toLowerCase().includes("cerrado"))
+        ).length;
+        if (todos === 0 || resueltosAsignados === 0) return 0;
+
+        return Number(((resueltosAsignados / todos) * 100).toFixed(1));
     }, [userIncidents, currentUserId]);
 
     return (
@@ -140,9 +203,9 @@ export default function MyIncidents() {
                             <tbody className="divide-y divide-gray-100 text-xs">
                                 {incidentesFiltrados.length > 0 ? (
                                     incidentesFiltrados.map((inc) => (
-                                        <tr key={inc.id_incidente} onClick={() => navigate(`/incidents/${inc.id_incidente}`)} className="hover:bg-blue-50/50 transition-colors">
+                                        <tr key={inc.id_incidente} onClick={() => navigate(`/incidents/${inc.id_incidente}`)} className="hover:bg-blue-50/50 transition-colors cursor-pointer">
                                             <td className="p-3 text-center text-gray-500">
-                                                {inc.fecha_inicio ? new Date(inc.fecha_inicio).toLocaleDateString("es-AR", { day: '2-digit', month: 'short', year: '2-digit' }) : "—"}
+                                                {inc.created_at ? new Date(inc.created_at).toLocaleDateString("es-AR", { day: '2-digit', month: 'short', year: '2-digit' }) : "—"}
                                             </td>
                                             <td className="p-3 text-center font-bold text-gray-700">#{inc.id_incidente}</td>
                                             <td className="p-3 text-center">
@@ -162,10 +225,12 @@ export default function MyIncidents() {
                                                 {inc.usuario_asignado?.nombre || "Sin asignar"}
                                             </td>
                                             <td className="p-3 text-center">
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-[10px] font-bold ${getStatusColor(inc.estado_incidentes?.descripcion)}`}
+                                                >
                                                     {inc.estado_incidentes?.descripcion || "Registrado"}
                                                 </span>
-                                            </td> 
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
@@ -190,26 +255,58 @@ export default function MyIncidents() {
                     <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-wider">
                         Panel de Resumen de Tickets
                     </h2>
-
+                    <div className="bg-gray-50 p-3 rounded-xl">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">TOTAL CREADOS</span>
+                        <p className="text-2xl font-black text-blue-600">{counts.creados} <span className="text-xs font-normal text-gray-500">tickets</span></p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">TASA DE ÉXITO CREADOS</span>
+                        <p className="text-2xl font-black text-green-600">{averageCreated}% </p>
+                    </div>
                     <div className="bg-gray-50 p-3 rounded-xl">
                         <span className="text-[10px] text-gray-400 font-bold uppercase">TOTAL ASIGNADOS</span>
                         <p className="text-2xl font-black text-blue-600">{counts.asignados} <span className="text-xs font-normal text-gray-500">tickets</span></p>
                     </div>
-
                     <div className="bg-gray-50 p-3 rounded-xl">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase">TASA DE ÉXITO</span>
-                        <p className="text-2xl font-black text-green-600">93%</p>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">TASA DE ÉXITO ASIGNADOS</span>
+                        <p className="text-2xl font-black text-green-600">{averageAssing}% </p>
                     </div>
                 </div>
 
-                {/* Alertas Críticas */}
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-2">
-                    <div className="flex items-center gap-2 text-red-600 font-bold text-xs">
-                        <ExclamationTriangleIcon className="w-4 h-4" /> Alertas Críticas
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                    <div className="flex items-center justify-center gap-2 font-bold text-sm w-full border-b border-gray-100 pb-3">
+                        <span className="text-gray-700 uppercase tracking-wider text-xs">Tiempos de SLA (Objetivos)</span>
                     </div>
-                    <p className="text-[11px] text-gray-500 leading-relaxed">
-                        Revisar incidencias con prioridad alta pendientes de resolución en el establecimiento principal.
-                    </p>
+
+                    <div className="space-y-2">
+                        {[
+                            { nombre: "Crítica", color: "text-red-700 bg-red-50/50 border-red-200", dot: "bg-red-600", resp: "15 min", resol: "4 hs" },
+                            { nombre: "Urgente", color: "text-orange-700 bg-orange-50/50 border-orange-200", dot: "bg-orange-500", resp: "1 hora", resol: "8 hs" },
+                            { nombre: "Media", color: "text-amber-700 bg-amber-50/50 border-amber-200", dot: "bg-amber-500", resp: "4 horas", resol: "24 hs" },
+                            { nombre: "Baja", color: "text-blue-700 bg-blue-50/50 border-blue-200", dot: "bg-blue-500", resp: "8 horas", resol: "48 hs" },
+                            { nombre: "Informativa", color: "text-gray-700 bg-gray-50 border-gray-200", dot: "bg-gray-400", resp: "Sin límite", resol: "Sin límite" },
+                        ].map((item, idx) => (
+                            <div key={idx} className={`p-2.5 rounded-xl border flex flex-col gap-1.5 ${item.color}`}>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs flex items-center gap-1.5">
+                                        <span className={`w-2 h-2 rounded-full ${item.dot}`}></span>
+                                        {item.nombre}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 text-[11px] gap-2 pt-1 border-t border-black/5">
+                                    <div>
+                                        <span className="opacity-70">Resp: </span>
+                                        <strong className="font-semibold">{item.resp}</strong>
+                                    </div>
+                                    <div>
+                                        <span className="opacity-70">Resol: </span>
+                                        <strong className="font-semibold">{item.resol}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
                 </div>
 
             </div>
