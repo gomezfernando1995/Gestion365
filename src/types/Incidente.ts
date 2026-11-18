@@ -5,7 +5,7 @@ export interface Incidente {
   fecha_cierre?: string | undefined;
   created_at?: string;         
   updated_at?: string;        
-  sla_tiempo?: boolean | undefined;       
+  sla_cumple?: boolean | undefined;       
   tiempo_resolucion?: number | undefined; 
   deleted_at?: string;
   id_establecimiento?: number | undefined;

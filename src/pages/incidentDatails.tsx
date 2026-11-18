@@ -312,7 +312,6 @@ export default function IncidentDetails() {
                                 </span>
                             </li>
 
-
                             <li className="flex justify-baseline items-center">
                                 <span className="font-semibold text-gray-500">Establecimiento:</span>
                                 <span className="font-medium text-gray-800  pl-3">

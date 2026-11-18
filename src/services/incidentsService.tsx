@@ -27,11 +27,33 @@ export async function getIncidents(): Promise<Incidente[]> {
   return data || [];
 }
 
+export async function getClosedIncidentsByDateRange(
+  firstDay: string,
+  lastDay: string,
+  idEstablecimiento?: number | string
+) {
+  let query = supabase
+    .from("incidentes")
+    .select("*")
+    .in("id_estado_incidente", [7, 8, 10])
+    .gte("created_at", firstDay)
+    .lte("created_at", lastDay);
+
+  // Si el usuario tiene un establecimiento asignado, filtramos por él
+  if (idEstablecimiento) {
+    query = query.eq("id_establecimiento", idEstablecimiento);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
 export async function getIncidentsReportbyUser(userId: number): Promise<Incidente[]> {
 
   const parsedId = Number(userId);
 
-  // Evita hacer la consulta si parsedId es NaN o inválido
   if (isNaN(parsedId) || !userId) {
     console.warn("ID de usuario no válido para consultar incidentes:", userId);
     return []; // o lanzar un error controlado
@@ -144,7 +166,7 @@ export async function getIncidentsByUserAssing(userId: number) {
     console.warn("ID de usuario no válido para consultar incidentes:", userId);
     return []; // o lanzar un error controlado
   }
-  
+
   const { data, error } = await supabase
     .from("incidentes")
     .select(`*,establecimientos!fk_establecimiento(*)`)
