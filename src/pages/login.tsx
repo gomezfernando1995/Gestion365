@@ -82,7 +82,7 @@ const Login = ({ setUser }: { setUser?: (user: any) => void }) => {
                             </label>
                             <div className="text-sm">
                                 <a href="#" className="font-semibold text-indigo-400 hover:text-indigo-300">
-                                    ¿Olvidaste mi contraseña?
+                                    ¿Olvidaste tu contraseña?
                                 </a>
                             </div>
                         </div>

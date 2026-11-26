@@ -16,6 +16,7 @@ import UserDetails from "./pages/userDetails";
 import EstablishmentDetails from "./pages/establishmentDetails";
 import ContactUs from "./pages/contact";
 import MyIncidents from "./pages/myIncidents";
+import AboutUs from "./pages/aboutUs";
 
 export default function App() {
 
@@ -44,6 +45,7 @@ export default function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/contact" element={<ContactUs />} />
+                <Route path="/about" element={<AboutUs />} />
                 {/* Si intenta ir al dashboard sin login → redirige a "/" */}
                 <Route path="/dashboard" element={<Navigate to="/" />} />
               </>

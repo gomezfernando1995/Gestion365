@@ -67,7 +67,8 @@ export default function ContactUs() {
                                 </div>
                                 <div>
                                     <h4 className="text-xs font-semibold uppercase tracking-wider text-blue-300">Email</h4>
-                                    <p className="text-sm font-medium text-white">soportegestion365@gmail.com</p>
+                                    <p className="text-sm font-medium text-white">secondgomezfernando1995@gmail.com
+</p>
                                 </div>
                             </div>
 
