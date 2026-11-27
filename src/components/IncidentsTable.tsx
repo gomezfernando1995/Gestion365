@@ -85,7 +85,7 @@ const IncidentsTable = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm w-full">
+    <div className="bg-white overflow-y-auto  rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm w-full">
       {/* Encabezado Principal */}
       <div className="flex items-center justify-between mb-5">
         <div>

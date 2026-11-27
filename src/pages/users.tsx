@@ -55,7 +55,7 @@ export default function Users() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="overflow-y-auto min-h-screen bg-gray-100 p-4">
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-center bg-white shadow-sm p-4 rounded-md gap-3">
         <h1 className="text-xl font-bold text-blue-900">Panel Usuarios</h1>

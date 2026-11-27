@@ -106,7 +106,7 @@ export const Reports: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
+    <div className="overflow-y-auto p-6 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
       {/* 1. Header y Filtros Globales */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>

@@ -24,7 +24,6 @@ export default function ContactUs() {
             [e.target.name]: e.target.value,
         });
     };
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);

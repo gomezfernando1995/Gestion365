@@ -186,7 +186,7 @@ export default function Incidents() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 space-y-4">
+    <div className="min-h-screen overflow-y-auto bg-gray-100 p-4 space-y-4">
       {/* Header */}
       <header className="flex flex-col sm:flex-row  justify-between items-center bg-white shadow-sm p-4 rounded-xl">
         <div>

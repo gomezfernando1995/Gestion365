@@ -127,7 +127,7 @@ export default function MyIncidents() {
     }, [userIncidents, currentUserId]);
 
     return (
-        <div className="flex flex-col xl:flex-row gap-4 p-4 bg-gray-100 min-h-screen text-sm">
+        <div className="overflow-y-auto flex flex-col xl:flex-row gap-4 p-4 bg-gray-100 min-h-screen text-sm">
 
             {/* Columna Principal (Listado y Pestañas) */}
             <div className="flex-1 space-y-4">
@@ -200,7 +200,7 @@ export default function MyIncidents() {
                                     <th className="p-3 text-center">Estado</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 text-xs">
+                            <tbody className=" overflow-y-auto divide-y divide-gray-100 text-xs">
                                 {incidentesFiltrados.length > 0 ? (
                                     incidentesFiltrados.map((inc) => (
                                         <tr key={inc.id_incidente} onClick={() => navigate(`/incidents/${inc.id_incidente}`)} className="hover:bg-blue-50/50 transition-colors cursor-pointer">

@@ -23,7 +23,7 @@ export const TopUsers = () => {
     };
 
     return (
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+        <div className="bg-white overflow-y-auto p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col ">
             {/* Header */}
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -49,12 +49,12 @@ export const TopUsers = () => {
                     <p className="text-sm">No hay incidentes asignados o resueltos aún.</p>
                 </div>
             ) : (
-                /* Listado de Técnicos / Usuarios */
+                /* Listado de Técnicos / Usuarios */  
                 <div className="space-y-6">
                     {topTecnicos.map((user, index) => {
                         // Limpiamos la visualización para mostrar solo el nombre o una etiqueta clara
                         const nombreMostrar = user.nombre_usuario && user.nombre_usuario.trim() !== ''
-                            ? user.nombre_usuario 
+                            ? user.nombre_usuario
                             : `Usuario ID: ${user.id_usuario_asignado}`;
 
                         const cantidad = user.total_incidentes;
@@ -85,15 +85,14 @@ export const TopUsers = () => {
                                 {/* Barra de Progreso */}
                                 <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                                     <div
-                                        className={`h-1.5 rounded-full transition-all duration-500 ${
-                                            index === 0
+                                        className={`h-1.5 rounded-full transition-all duration-500 ${index === 0
                                                 ? 'bg-amber-500'
                                                 : index === 1
-                                                ? 'bg-slate-400'
-                                                : index === 2
-                                                ? 'bg-orange-400'
-                                                : 'bg-blue-500'
-                                        }`}
+                                                    ? 'bg-slate-400'
+                                                    : index === 2
+                                                        ? 'bg-orange-400'
+                                                        : 'bg-blue-500'
+                                            }`}
                                         style={{ width: `${porcentaje}%` }}
                                     />
                                 </div>

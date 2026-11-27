@@ -6,7 +6,7 @@ import IncidentsTable from '../components/IncidentsTable';
 
 const Dashboard = () => {
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 overflow-y-auto flex flex-col">
       <Header />
       <main className="p-6 space-y-6 overflow-y-auto">
         <StatusCards />
